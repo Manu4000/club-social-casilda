@@ -139,11 +139,39 @@ button.danger{background:#b52b2b}
 <div id="listaPartidos"></div>
 </section>
 
+
 <section>
 <h2>👥 Equipo de trabajo</h2>
-<p>Administrá los profesores y ayudantes de la escuelita. Podés actualizar sus datos y fotografías.</p>
+<p>Administrá los profesores y ayudantes de la escuelita.</p>
+
+<h3>➕ Agregar nuevo integrante</h3>
+
+<form id="formEquipo">
+  <label>Nombre y apellido</label>
+  <input id="nuevoEquipoNombre" placeholder="Ej: Juan Pérez" required>
+
+  <label>Función</label>
+  <select id="nuevoEquipoFuncion" required>
+    <option value="">Seleccionar función</option>
+    <option value="Profesor">Profesor</option>
+    <option value="Ayudante">Ayudante</option>
+  </select>
+
+  <label>Categorías a cargo</label>
+  <input id="nuevoEquipoCategorias" placeholder="Ej: 2021/22, 2020 y 2019">
+
+  <label>Fotografía (opcional)</label>
+  <input id="nuevoEquipoFoto" type="file" accept="image/*">
+
+  <button type="submit">➕ Agregar integrante</button>
+</form>
+
+<hr style="margin:25px 0;border:0;border-top:1px solid #ddd">
+
+<h3>Integrantes actuales</h3>
+
 <div id="listaEquipo">
-<p>Cargando equipo de trabajo...</p>
+  <p>Cargando equipo de trabajo...</p>
 </div>
 </section>
 
@@ -224,13 +252,14 @@ async function verificarSesion(){
 
 /* EQUIPO DE TRABAJO */
 
+
 async function cargarEquipo(){
   const contenedor = document.getElementById("listaEquipo");
 
   contenedor.innerHTML = "<p>Conectando con la base de datos...</p>";
 
   try{
-    let {data,error} = await db
+    const {data,error} = await db
       .from("equipo_trabajo")
       .select("*")
       .order("orden",{ascending:true});
@@ -243,43 +272,7 @@ async function cargarEquipo(){
     }
 
     if(!data || data.length === 0){
-
-      const integrantes = [
-        {nombre:"Manuel Torres",funcion:"Profesor",categorias:"2021/22, 2020, 2019, 2012, 2013, 2014 y 2015",orden:1,activo:true},
-        {nombre:"Ramón Aciarini",funcion:"Profesor",categorias:"2016, 2017 y 2018",orden:2,activo:true},
-        {nombre:"Francisco Moya",funcion:"Ayudante",categorias:"2019 y 2020",orden:3,activo:true},
-        {nombre:"Lautaro Mujica",funcion:"Ayudante",categorias:"2021/22, 2016, 2017 y 2018",orden:4,activo:true},
-        {nombre:"Matías Molina",funcion:"Ayudante",categorias:"2021/22, 2016, 2017 y 2018",orden:5,activo:true}
-      ];
-
-      const {error:errorInsertar} = await db
-        .from("equipo_trabajo")
-        .insert(integrantes);
-
-      if(errorInsertar){
-        contenedor.innerHTML =
-          "<p>Error al crear los integrantes: " +
-          escaparEquipo(errorInsertar.message) + "</p>";
-        return;
-      }
-
-      const respuesta = await db
-        .from("equipo_trabajo")
-        .select("*")
-        .order("orden",{ascending:true});
-
-      if(respuesta.error){
-        contenedor.innerHTML =
-          "<p>Error al recuperar los integrantes: " +
-          escaparEquipo(respuesta.error.message) + "</p>";
-        return;
-      }
-
-      data = respuesta.data;
-    }
-
-    if(!data || data.length === 0){
-      contenedor.innerHTML = "<p>No se encontraron integrantes.</p>";
+      contenedor.innerHTML = "<p>Todavía no hay integrantes cargados.</p>";
       return;
     }
 
@@ -311,6 +304,10 @@ async function cargarEquipo(){
         <button type="button" onclick="subirFotoEquipo(${persona.id})">
           📸 Subir fotografía
         </button>
+
+        <button type="button" class="danger" onclick="eliminarIntegrante(${persona.id})">
+          🗑️ Eliminar integrante
+        </button>
       </div>
     `).join("");
 
@@ -320,6 +317,26 @@ async function cargarEquipo(){
       escaparEquipo(error.message || error) + "</p>";
   }
 }
+
+async function eliminarIntegrante(id){
+  if(!confirm("¿Seguro que querés eliminar a este integrante? Esta acción no se puede deshacer.")){
+    return;
+  }
+
+  const {error} = await db
+    .from("equipo_trabajo")
+    .delete()
+    .eq("id",id);
+
+  if(error){
+    alert("No se pudo eliminar: " + error.message);
+    return;
+  }
+
+  alert("¡Integrante eliminado correctamente!");
+  await cargarEquipo();
+}
+
 
 async function guardarIntegrante(id){
   const nombre = document.getElementById("equipoNombre"+id).value.trim();
@@ -344,6 +361,94 @@ async function guardarIntegrante(id){
   alert("¡Datos actualizados!");
   await cargarEquipo();
 }
+  
+document.getElementById("formEquipo").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const nombre = document.getElementById("nuevoEquipoNombre").value.trim();
+  const funcion = document.getElementById("nuevoEquipoFuncion").value;
+  const categorias = document.getElementById("nuevoEquipoCategorias").value.trim();
+  const archivo = document.getElementById("nuevoEquipoFoto").files[0];
+
+  if(!nombre || !funcion){
+    alert("Completá el nombre y la función.");
+    return;
+  }
+
+  if(archivo && archivo.size > 10 * 1024 * 1024){
+    alert("La fotografía no puede superar los 10 MB.");
+    return;
+  }
+
+  const {data: existentes, error: errorOrden} = await db
+    .from("equipo_trabajo")
+    .select("orden")
+    .order("orden", {ascending:false})
+    .limit(1);
+
+  if(errorOrden){
+    alert("No se pudo consultar el equipo: " + errorOrden.message);
+    return;
+  }
+
+  const nuevoOrden = existentes && existentes.length > 0
+    ? (existentes[0].orden || 0) + 1
+    : 1;
+
+  const {data: persona, error} = await db
+    .from("equipo_trabajo")
+    .insert({
+      nombre,
+      funcion,
+      categorias,
+      orden:nuevoOrden,
+      activo:true
+    })
+    .select()
+    .single();
+
+  if(error){
+    alert("No se pudo agregar el integrante: " + error.message);
+    return;
+  }
+
+  if(archivo){
+    const nombreArchivo = archivo.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+    const ruta = persona.id + "/" + Date.now() + "-" + nombreArchivo;
+
+    const {error:errorSubida} = await db.storage
+      .from("equipo-fotos")
+      .upload(ruta,archivo);
+
+    if(errorSubida){
+      alert("El integrante se agregó, pero hubo un problema al subir la foto: " + errorSubida.message);
+      e.target.reset();
+      await cargarEquipo();
+      return;
+    }
+
+    const {data:urlData} = db.storage
+      .from("equipo-fotos")
+      .getPublicUrl(ruta);
+
+    const {error:errorFoto} = await db
+      .from("equipo_trabajo")
+      .update({imagen_url:urlData.publicUrl})
+      .eq("id",persona.id);
+
+    if(errorFoto){
+      alert("El integrante se agregó, pero no se pudo guardar el enlace de la foto: " + errorFoto.message);
+      e.target.reset();
+      await cargarEquipo();
+      return;
+    }
+  }
+
+  alert("¡Nuevo integrante agregado correctamente!");
+  e.target.reset();
+  await cargarEquipo();
+});
+
 
 async function subirFotoEquipo(id){
   const archivo = document.getElementById("equipoArchivo"+id).files[0];
