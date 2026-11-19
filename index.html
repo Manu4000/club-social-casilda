@@ -350,7 +350,11 @@ async function cargarPartidos(){
 }
 
 async function iniciarPagina(){
- await Promise.all([cargarActividades(),cargarPartidos()]);
+ await Promise.all([
+  cargarCategorias(),
+  cargarActividades(),
+  cargarPartidos()
+ ]);
 }
 
 iniciarPagina();
