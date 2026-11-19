@@ -1,1 +1,186 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escuelita de Fútbol | Club Social</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f2f5f2;color:#222}
+header{background:#08783d;color:white;text-align:center;padding:25px 15px}
+header img{width:85px;height:85px;object-fit:contain}
+header h1{margin:10px 0 5px}
+nav{background:#075d31;padding:13px;text-align:center}
+nav a{color:white;text-decoration:none;font-weight:bold}
+main{max-width:950px;margin:25px auto;padding:0 15px}
+.seccion{background:white;padding:22px;margin-bottom:20px;border-radius:12px;box-shadow:0 2px 8px #0001}
+h2{color:#08783d;margin-top:0}
+#fotoPrincipal{width:100%;max-height:420px;object-fit:cover;border-radius:10px}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.galeria img{width:100%;height:190px;object-fit:cover;border-radius:9px}
+.item{padding:12px 0;border-bottom:1px solid #ddd}
+.item:last-child{border:0}
+footer{background:#075d31;color:white;text-align:center;padding:22px}
+.oculto{display:none}
+</style>
+</head>
+<body>
+
+<header>
+<img src="/escudo-social.png" alt="Escudo Club Social">
+<h1>Club Social Casilda</h1>
+<p>Escuelita de Fútbol</p>
+</header>
+
+<nav>
+<a href="/">← Volver a la página principal</a>
+</nav>
+
+<main>
+<section class="seccion">
+<h2 id="titulo">Cargando categoría...</h2>
+<img id="fotoPrincipal" class="oculto" alt="Foto principal de la categoría">
+<p id="descripcion"></p>
+<p><strong>Entrenamientos:</strong> <span id="horarios">A confirmar</span></p>
+</section>
+
+<section class="seccion">
+<h2>📢 Novedades y comunicados</h2>
+<div id="novedades">Cargando...</div>
+</section>
+
+<section class="seccion">
+<h2>⚽ Próximos partidos</h2>
+<div id="partidos">Cargando...</div>
+</section>
+
+<section class="seccion">
+<h2>📸 Galería de fotos</h2>
+<div class="galeria" id="galeria">Cargando fotografías...</div>
+</section>
+</main>
+
+<footer>
+Club Social Casilda · Escuelita de Fútbol
+</footer>
+
+<script>
+const SUPABASE_URL = "https://eazpzkjomhojzwresvoa.supabase.co";
+const SUPABASE_KEY = "sb_publishable_7LrSBH4iHJvnxsJLdZt_AA_-0hEOx-3";
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const parametros = new URLSearchParams(window.location.search);
+const nombreCategoria = parametros.get("cat");
+
+async function iniciar(){
+  if(!nombreCategoria){
+    document.getElementById("titulo").textContent="No se indicó una categoría";
+    return;
+  }
+
+  const {data: categoria,error} = await db
+    .from("categorias")
+    .select("*")
+    .eq("nombre",nombreCategoria)
+    .eq("publicado",true)
+    .maybeSingle();
+
+  if(error || !categoria){
+    document.getElementById("titulo").textContent="Categoría no encontrada";
+    return;
+  }
+
+  document.title = categoria.nombre + " | Club Social";
+  document.getElementById("titulo").textContent="Categoría " + categoria.nombre;
+  document.getElementById("descripcion").textContent=categoria.descripcion || "";
+  document.getElementById("horarios").textContent=categoria.dias_horarios || "A confirmar";
+
+  if(categoria.imagen_url){
+    const foto=document.getElementById("fotoPrincipal");
+    foto.src=categoria.imagen_url;
+    foto.classList.remove("oculto");
+  }
+
+  const {data:fotos} = await db
+    .from("fotos_categorias")
+    .select("*")
+    .eq("categoria_id",categoria.id)
+    .order("created_at",{ascending:false});
+
+  const galeria=document.getElementById("galeria");
+  galeria.innerHTML="";
+
+  if(fotos && fotos.length){
+    fotos.forEach(f=>{
+      const img=document.createElement("img");
+      img.src=f.imagen_url;
+      img.alt=f.descripcion || "Foto de la categoría";
+      galeria.appendChild(img);
+    });
+  }else{
+    galeria.textContent="Próximamente compartiremos fotografías.";
+  }
+
+  const {data:actividades} = await db
+    .from("actividades")
+    .select("*")
+    .eq("publicado",true)
+    .order("fecha",{ascending:true});
+
+  const novedades=document.getElementById("novedades");
+  novedades.innerHTML="";
+  const propias=(actividades || []).filter(a =>
+    a.categoria === categoria.nombre
+  );
+
+  if(propias.length){
+    propias.forEach(a=>{
+      const div=document.createElement("div");
+      div.className="item";
+      div.innerHTML="<strong>"+escapar(a.titulo)+"</strong><p>"+
+        escapar(a.descripcion || "")+"</p>";
+      novedades.appendChild(div);
+    });
+  }else{
+    novedades.textContent="Próximamente compartiremos novedades.";
+  }
+
+  const {data:partidos} = await db
+    .from("partidos")
+    .select("*, club_local:clubes!partidos_club_local_id_fkey(nombre), club_visitante:clubes!partidos_club_visitante_id_fkey(nombre), canchas(nombre)")
+    .eq("categoria",categoria.nombre)
+    .order("fecha",{ascending:true});
+
+  const contenedor=document.getElementById("partidos");
+  contenedor.innerHTML="";
+
+  if(partidos && partidos.length){
+    partidos.forEach(p=>{
+      const div=document.createElement("div");
+      div.className="item";
+      div.innerHTML="<strong>"+escapar(p.club_local?.nombre || "Local")+
+        " vs "+escapar(p.club_visitante?.nombre || "Visitante")+
+        "</strong><p>"+escapar(p.fecha || "Fecha a confirmar")+
+        " · "+escapar(p.horario || "Horario a confirmar")+
+        " · "+escapar(p.canchas?.nombre || "Cancha a confirmar")+"</p>";
+      contenedor.appendChild(div);
+    });
+  }else{
+    contenedor.textContent="Todavía no hay partidos cargados.";
+  }
+}
+
+function escapar(valor){
+  return String(valor).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",
+    '"':"&quot;","'":"&#39;"
+  })[c]);
+}
+
+iniciar();
+</script>
+</body>
+</html>
+
