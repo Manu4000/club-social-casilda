@@ -44,6 +44,7 @@ button.danger{background:#b52b2b}
 </section>
 
 <div id="panel">
+
 <section>
 <h2>👋 Administración</h2>
 <p>Desde acá podés cargar y administrar el contenido de la página del club.</p>
@@ -70,20 +71,27 @@ button.danger{background:#b52b2b}
 <form id="formActividad">
 <label>Título</label>
 <input id="actTitulo" placeholder="Ej: Torneo de fútbol infantil" required>
+
 <label>Descripción</label>
 <textarea id="actDescripcion" placeholder="Información de la actividad"></textarea>
+
 <label>Tipo de actividad</label>
 <input id="actCategoria" placeholder="Ej: Fútbol infantil, Torneo, Comunicado" value="Fútbol infantil">
-  <label>¿A quién va dirigido?</label>
+
+<label>¿A quién va dirigido?</label>
 <select id="actCategoriaId">
-  <option value="">Todas las categorías</option>
+<option value="">Todas las categorías</option>
 </select>
+
 <label>Fecha</label>
 <input id="actFecha" type="date">
+
 <label>Horario</label>
 <input id="actHorario" placeholder="Ej: 15:00 hs">
+
 <label>Lugar</label>
 <input id="actLugar" placeholder="Lugar de la actividad">
+
 <button type="submit">Publicar actividad</button>
 </form>
 <div id="listaActividades"></div>
@@ -118,16 +126,22 @@ button.danger{background:#b52b2b}
 <form id="formPartido">
 <label>Categoría</label>
 <select id="partidoCategoria" required></select>
+
 <label>Club local</label>
 <select id="clubLocal" required></select>
+
 <label>Club visitante</label>
 <select id="clubVisitante" required></select>
+
 <label>Fecha</label>
 <input id="partidoFecha" type="date" required>
+
 <label>Horario</label>
 <input id="partidoHorario" placeholder="Ej: 10:30 hs">
+
 <label>Cancha</label>
 <select id="partidoCancha"></select>
+
 <button type="submit">Agregar partido</button>
 </form>
 <div id="listaPartidos"></div>
@@ -136,15 +150,20 @@ button.danger{background:#b52b2b}
 <section>
 <h2>📸 Fotografías de las categorías</h2>
 <p>Subí fotos de entrenamientos, partidos y encuentros. Las familias podrán verlas en la página de cada categoría.</p>
+
 <label>Seleccionar categoría</label>
 <select id="fotoCategoria"></select>
+
 <label>Elegir fotografía</label>
 <input id="archivoFoto" type="file" accept="image/*">
+
 <label>Descripción de la foto (opcional)</label>
 <input id="descripcionFoto" placeholder="Ej: Entrenamiento del sábado">
+
 <button onclick="subirFoto()">Subir fotografía</button>
 <div id="galeriaAdmin"></div>
 </section>
+
 </div>
 </main>
 
@@ -170,11 +189,14 @@ function avisar(texto){
 async function iniciarSesion(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
+
   const {error} = await db.auth.signInWithPassword({email,password});
+
   if(error){
     document.getElementById("errorLogin").textContent = "No se pudo ingresar: " + error.message;
     return;
   }
+
   await verificarSesion();
 }
 
@@ -185,6 +207,7 @@ async function cerrarSesion(){
 
 async function verificarSesion(){
   const {data:{session}} = await db.auth.getSession();
+
   if(session){
     document.getElementById("login").style.display = "none";
     document.getElementById("panel").style.display = "block";
@@ -200,134 +223,285 @@ async function cargarTodo(){
     cargarCanchas(),
     cargarPartidos()
   ]);
+
   await cargarFotos();
 }
 
 async function cargarCategorias(){
   const {data,error} = await db.from("categorias").select("*").order("nombre");
-  if(error){avisar("Error al cargar categorías: "+error.message);return;}
+
+  if(error){
+    avisar("Error al cargar categorías: "+error.message);
+    return;
+  }
+
   categorias = data || [];
+
   document.getElementById("listaCategorias").innerHTML = categorias.map(c=>`
     <div class="item">
-      <div><strong>${escapar(c.nombre)}</strong><br><span class="small">${escapar(c.descripcion)}</span><br><span class="small">${escapar(c.dias_horarios)}</span></div>
+      <div>
+        <strong>${escapar(c.nombre)}</strong><br>
+        <span class="small">${escapar(c.descripcion)}</span><br>
+        <span class="small">${escapar(c.dias_horarios)}</span>
+      </div>
       <div>
         <button onclick="editarCategoria(${c.id})">Editar</button>
         <button class="danger" onclick="eliminarRegistro('categorias',${c.id})">Eliminar</button>
       </div>
-    </div>`).join("") || "<p>Aún no hay categorías.</p>";
+    </div>
+  `).join("") || "<p>Aún no hay categorías.</p>";
 
-  const opciones = categorias.map(c=>`<option value="${c.id}">${escapar(c.nombre)}</option>`).join("");
-  document.getElementById("fotoCategoria").innerHTML = '<option value="">Seleccionar categoría</option>'+opciones;
-  document.getElementById("partidoCategoria").innerHTML = '<option value="">Seleccionar categoría</option>'+categorias.map(c=>`<option value="${escapar(c.nombre)}">${escapar(c.nombre)}</option>`).join("");
+  const opciones = categorias.map(c=>
+    `<option value="${c.id}">${escapar(c.nombre)}</option>`
+  ).join("");
+
+  document.getElementById("fotoCategoria").innerHTML =
+    '<option value="">Seleccionar categoría</option>'+opciones;
+
+  document.getElementById("actCategoriaId").innerHTML =
+    '<option value="">Todas las categorías</option>'+opciones;
+
+  document.getElementById("partidoCategoria").innerHTML =
+    '<option value="">Seleccionar categoría</option>'+
+    categorias.map(c=>
+      `<option value="${escapar(c.nombre)}">${escapar(c.nombre)}</option>`
+    ).join("");
 }
-document.getElementById("actCategoriaId").innerHTML =
-  '<option value="">Todas las categorías</option>'+opciones;
+
 document.getElementById("formCategoria").addEventListener("submit",async e=>{
   e.preventDefault();
+
   const registro={
     nombre:document.getElementById("catNombre").value,
     descripcion:document.getElementById("catDescripcion").value,
     dias_horarios:document.getElementById("catHorario").value
   };
+
   const {error}=await db.from("categorias").insert(registro);
-  if(error){avisar(error.message);return;}
-  e.target.reset();avisar("Categoría agregada.");await cargarCategorias();
+
+  if(error){
+    avisar(error.message);
+    return;
+  }
+
+  e.target.reset();
+  avisar("Categoría agregada.");
+  await cargarCategorias();
 });
 
 async function editarCategoria(id){
   const c=categorias.find(x=>x.id===id);
+
   const nombre=prompt("Nombre de la categoría:",c.nombre);
   if(nombre===null)return;
+
   const descripcion=prompt("Descripción:",c.descripcion||"");
   if(descripcion===null)return;
+
   const horario=prompt("Días y horarios:",c.dias_horarios||"");
   if(horario===null)return;
-  const {error}=await db.from("categorias").update({nombre,descripcion,dias_horarios:horario}).eq("id",id);
-  if(error){avisar(error.message);return;}
-  await cargarCategorias();avisar("Categoría actualizada.");
+
+  const {error}=await db.from("categorias")
+    .update({nombre,descripcion,dias_horarios:horario})
+    .eq("id",id);
+
+  if(error){
+    avisar(error.message);
+    return;
+  }
+
+  await cargarCategorias();
+  avisar("Categoría actualizada.");
 }
 
 async function cargarActividades(){
-  const {data,error}=await db.from("actividades").select("*").order("fecha",{ascending:true});
-  if(error){avisar(error.message);return;}
+  const {data,error}=await db.from("actividades")
+    .select("*, categorias(nombre)")
+    .order("fecha",{ascending:true});
+
+  if(error){
+    avisar("Error al cargar actividades: "+error.message);
+    return;
+  }
+
   document.getElementById("listaActividades").innerHTML=(data||[]).map(a=>`
-    <div class="item"><div><strong>${escapar(a.titulo)}</strong><br>${escapar(a.descripcion)}<br><span class="small">${escapar(a.categoria)} · ${escapar(a.fecha)} · ${escapar(a.horario)} · ${escapar(a.lugar)}</span></div>
-    <button class="danger" onclick="eliminarRegistro('actividades',${a.id})">Eliminar</button></div>`).join("")||"<p>Aún no hay actividades.</p>";
+    <div class="item">
+      <div>
+        <strong>${escapar(a.titulo)}</strong><br>
+        ${escapar(a.descripcion)}<br>
+        <span class="small">
+          ${escapar(a.categoria)} ·
+          ${escapar(a.categorias?.nombre || "Todas las categorías")} ·
+          ${escapar(a.fecha)} ·
+          ${escapar(a.horario)} ·
+          ${escapar(a.lugar)}
+        </span>
+      </div>
+      <button class="danger" onclick="eliminarRegistro('actividades',${a.id})">Eliminar</button>
+    </div>
+  `).join("") || "<p>Aún no hay actividades.</p>";
 }
 
 document.getElementById("formActividad").addEventListener("submit",async e=>{
   e.preventDefault();
+
   const registro={
     titulo:document.getElementById("actTitulo").value,
     descripcion:document.getElementById("actDescripcion").value,
     categoria:document.getElementById("actCategoria").value,
+    categoria_id:document.getElementById("actCategoriaId").value
+      ? Number(document.getElementById("actCategoriaId").value)
+      : null,
     fecha:document.getElementById("actFecha").value||null,
     horario:document.getElementById("actHorario").value,
     lugar:document.getElementById("actLugar").value,
     publicado:true
   };
+
   const {error}=await db.from("actividades").insert(registro);
-  if(error){avisar(error.message);return;}
-  e.target.reset();document.getElementById("actCategoria").value="Fútbol infantil";
-  avisar("Actividad publicada.");await cargarActividades();
+
+  if(error){
+    avisar("No se pudo publicar: "+error.message);
+    return;
+  }
+
+  e.target.reset();
+  document.getElementById("actCategoria").value="Fútbol infantil";
+
+  avisar("Actividad publicada.");
+  await cargarActividades();
 });
 
 async function cargarClubes(){
   const {data,error}=await db.from("clubes").select("*").order("nombre");
-  if(error){avisar(error.message);return;}
+
+  if(error){
+    avisar(error.message);
+    return;
+  }
+
   clubes=data||[];
+
   document.getElementById("listaClubes").innerHTML=clubes.map(c=>`
-    <div class="item">${c.escudo_url?`<img src="${escapar(c.escudo_url)}" alt="">`:""}
-    <strong>${escapar(c.nombre)}</strong>
-    <button class="danger" onclick="eliminarRegistro('clubes',${c.id})">Eliminar</button></div>`).join("")||"<p>Aún no hay clubes.</p>";
-  const opciones=clubes.map(c=>`<option value="${c.id}">${escapar(c.nombre)}</option>`).join("");
-  document.getElementById("clubLocal").innerHTML='<option value="">Seleccionar club</option>'+opciones;
-  document.getElementById("clubVisitante").innerHTML='<option value="">Seleccionar club</option>'+opciones;
+    <div class="item">
+      ${c.escudo_url?`<img src="${escapar(c.escudo_url)}" alt="">`:""}
+      <strong>${escapar(c.nombre)}</strong>
+      <button class="danger" onclick="eliminarRegistro('clubes',${c.id})">Eliminar</button>
+    </div>
+  `).join("") || "<p>Aún no hay clubes.</p>";
+
+  const opciones=clubes.map(c=>
+    `<option value="${c.id}">${escapar(c.nombre)}</option>`
+  ).join("");
+
+  document.getElementById("clubLocal").innerHTML =
+    '<option value="">Seleccionar club</option>'+opciones;
+
+  document.getElementById("clubVisitante").innerHTML =
+    '<option value="">Seleccionar club</option>'+opciones;
 }
 
 document.getElementById("formClub").addEventListener("submit",async e=>{
   e.preventDefault();
+
   const {error}=await db.from("clubes").insert({
     nombre:document.getElementById("clubNombre").value,
     escudo_url:document.getElementById("clubEscudo").value||null
   });
-  if(error){avisar(error.message);return;}
-  e.target.reset();avisar("Club agregado.");await cargarClubes();
+
+  if(error){
+    avisar(error.message);
+    return;
+  }
+
+  e.target.reset();
+  avisar("Club agregado.");
+  await cargarClubes();
 });
 
 async function cargarCanchas(){
   const {data,error}=await db.from("canchas").select("*").order("nombre");
-  if(error){avisar(error.message);return;}
+
+  if(error){
+    avisar(error.message);
+    return;
+  }
+
   canchas=data||[];
+
   document.getElementById("listaCanchas").innerHTML=canchas.map(c=>`
-    <div class="item"><div><strong>${escapar(c.nombre)}</strong><br><span class="small">${escapar(c.ubicacion)}</span></div>
-    <button class="danger" onclick="eliminarRegistro('canchas',${c.id})">Eliminar</button></div>`).join("")||"<p>Aún no hay canchas.</p>";
-  document.getElementById("partidoCancha").innerHTML='<option value="">Seleccionar cancha</option>'+canchas.map(c=>`<option value="${c.id}">${escapar(c.nombre)}</option>`).join("");
+    <div class="item">
+      <div>
+        <strong>${escapar(c.nombre)}</strong><br>
+        <span class="small">${escapar(c.ubicacion)}</span>
+      </div>
+      <button class="danger" onclick="eliminarRegistro('canchas',${c.id})">Eliminar</button>
+    </div>
+  `).join("") || "<p>Aún no hay canchas.</p>";
+
+  document.getElementById("partidoCancha").innerHTML =
+    '<option value="">Seleccionar cancha</option>'+
+    canchas.map(c=>
+      `<option value="${c.id}">${escapar(c.nombre)}</option>`
+    ).join("");
 }
 
 document.getElementById("formCancha").addEventListener("submit",async e=>{
   e.preventDefault();
+
   const {error}=await db.from("canchas").insert({
     nombre:document.getElementById("canchaNombre").value,
     ubicacion:document.getElementById("canchaUbicacion").value
   });
-  if(error){avisar(error.message);return;}
-  e.target.reset();avisar("Cancha agregada.");await cargarCanchas();
+
+  if(error){
+    avisar(error.message);
+    return;
+  }
+
+  e.target.reset();
+  avisar("Cancha agregada.");
+  await cargarCanchas();
 });
 
 async function cargarPartidos(){
-  const {data,error}=await db.from("partidos").select("*, clubes_local:club_local_id(nombre), clubes_visitante:club_visitante_id(nombre), canchas(nombre)").order("fecha");
-  if(error){avisar(error.message);return;}
+  const {data,error}=await db.from("partidos")
+    .select("*, club_local:clubes!partidos_club_local_id_fkey(nombre), club_visitante:clubes!partidos_club_visitante_id_fkey(nombre), canchas(nombre)")
+    .order("fecha");
+
+  if(error){
+    avisar("Error al cargar partidos: "+error.message);
+    return;
+  }
+
   document.getElementById("listaPartidos").innerHTML=(data||[]).map(p=>`
-    <div class="item"><div><strong>${escapar(p.categoria)}</strong><br>${escapar(p.clubes_local?.nombre||"Club local")} vs ${escapar(p.clubes_visitante?.nombre||"Club visitante")}<br><span class="small">${escapar(p.fecha)} · ${escapar(p.horario)} · ${escapar(p.canchas?.nombre||"")}</span></div>
-    <button class="danger" onclick="eliminarRegistro('partidos',${p.id})">Eliminar</button></div>`).join("")||"<p>Aún no hay partidos cargados.</p>";
+    <div class="item">
+      <div>
+        <strong>${escapar(p.categoria)}</strong><br>
+        ${escapar(p.club_local?.nombre||"Club local")} vs
+        ${escapar(p.club_visitante?.nombre||"Club visitante")}<br>
+        <span class="small">
+          ${escapar(p.fecha)} ·
+          ${escapar(p.horario)} ·
+          ${escapar(p.canchas?.nombre||"")}
+        </span>
+      </div>
+      <button class="danger" onclick="eliminarRegistro('partidos',${p.id})">Eliminar</button>
+    </div>
+  `).join("") || "<p>Aún no hay partidos cargados.</p>";
 }
 
 document.getElementById("formPartido").addEventListener("submit",async e=>{
   e.preventDefault();
+
   const local=document.getElementById("clubLocal").value;
   const visitante=document.getElementById("clubVisitante").value;
-  if(local===visitante){avisar("Elegí dos clubes diferentes.");return;}
+
+  if(local===visitante){
+    avisar("Elegí dos clubes diferentes.");
+    return;
+  }
+
   const {error}=await db.from("partidos").insert({
     categoria:document.getElementById("partidoCategoria").value,
     club_local_id:local,
@@ -336,14 +510,27 @@ document.getElementById("formPartido").addEventListener("submit",async e=>{
     horario:document.getElementById("partidoHorario").value,
     cancha_id:document.getElementById("partidoCancha").value||null
   });
-  if(error){avisar(error.message);return;}
-  e.target.reset();avisar("Partido agregado al fixture.");await cargarPartidos();
+
+  if(error){
+    avisar(error.message);
+    return;
+  }
+
+  e.target.reset();
+  avisar("Partido agregado al fixture.");
+  await cargarPartidos();
 });
 
 async function eliminarRegistro(tabla,id){
   if(!confirm("¿Seguro que querés eliminar este registro?"))return;
+
   const {error}=await db.from(tabla).delete().eq("id",id);
-  if(error){avisar("No se pudo eliminar: "+error.message);return;}
+
+  if(error){
+    avisar("No se pudo eliminar: "+error.message);
+    return;
+  }
+
   avisar("Registro eliminado.");
   await cargarTodo();
 }
@@ -352,52 +539,108 @@ async function subirFoto(){
   const categoriaId=document.getElementById("fotoCategoria").value;
   const archivo=document.getElementById("archivoFoto").files[0];
   const descripcion=document.getElementById("descripcionFoto").value;
-  if(!categoriaId){avisar("Primero seleccioná una categoría.");return;}
-  if(!archivo){avisar("Elegí una fotografía.");return;}
-  if(archivo.size>10*1024*1024){avisar("La imagen no puede superar los 10 MB.");return;}
+
+  if(!categoriaId){
+    avisar("Primero seleccioná una categoría.");
+    return;
+  }
+
+  if(!archivo){
+    avisar("Elegí una fotografía.");
+    return;
+  }
+
+  if(archivo.size>10*1024*1024){
+    avisar("La imagen no puede superar los 10 MB.");
+    return;
+  }
 
   const extension=archivo.name.split(".").pop();
   const nombreArchivo=`${categoriaId}/${Date.now()}.${extension}`;
-  const {error:uploadError}=await db.storage.from("fotos-categorias").upload(nombreArchivo,archivo);
-  if(uploadError){avisar("Error al subir la imagen: "+uploadError.message);return;}
 
-  const {data:urlData}=db.storage.from("fotos-categorias").getPublicUrl(nombreArchivo);
+  const {error:uploadError}=await db.storage
+    .from("fotos-categorias")
+    .upload(nombreArchivo,archivo);
+
+  if(uploadError){
+    avisar("Error al subir la imagen: "+uploadError.message);
+    return;
+  }
+
+  const {data:urlData}=db.storage
+    .from("fotos-categorias")
+    .getPublicUrl(nombreArchivo);
+
   const {error}=await db.from("fotos_categorias").insert({
     categoria_id:Number(categoriaId),
     imagen_url:urlData.publicUrl,
     descripcion
   });
-  if(error){avisar("La imagen se subió, pero no se pudo guardar el registro: "+error.message);return;}
+
+  if(error){
+    avisar("La imagen se subió, pero no se pudo guardar el registro: "+error.message);
+    return;
+  }
 
   document.getElementById("archivoFoto").value="";
   document.getElementById("descripcionFoto").value="";
+
   avisar("¡Fotografía subida correctamente!");
   await cargarFotos();
 }
 
 async function cargarFotos(){
-  const {data,error}=await db.from("fotos_categorias").select("*, categorias(nombre)").order("created_at",{ascending:false});
-  if(error){avisar("Error al cargar fotografías: "+error.message);return;}
+  const {data,error}=await db.from("fotos_categorias")
+    .select("*, categorias(nombre)")
+    .order("created_at",{ascending:false});
+
+  if(error){
+    avisar("Error al cargar fotografías: "+error.message);
+    return;
+  }
+
   document.getElementById("galeriaAdmin").innerHTML=(data||[]).map(f=>`
     <div class="item">
-      <div><img class="foto-admin" src="${escapar(f.imagen_url)}" alt="">
-      <p><strong>${escapar(f.categorias?.nombre||"Categoría")}</strong><br><span class="small">${escapar(f.descripcion)}</span></p></div>
+      <div>
+        <img class="foto-admin" src="${escapar(f.imagen_url)}" alt="">
+        <p>
+          <strong>${escapar(f.categorias?.nombre||"Categoría")}</strong><br>
+          <span class="small">${escapar(f.descripcion)}</span>
+        </p>
+      </div>
       <button class="danger" onclick="eliminarFoto(${f.id},'${escapar(f.imagen_url)}')">Eliminar foto</button>
-    </div>`).join("")||"<p>Todavía no hay fotografías cargadas.</p>";
+    </div>
+  `).join("") || "<p>Todavía no hay fotografías cargadas.</p>";
 }
 
 async function eliminarFoto(id,url){
   if(!confirm("¿Querés eliminar esta fotografía?"))return;
+
   const marca="/fotos-categorias/";
   const posicion=url.indexOf(marca);
+
   if(posicion>=0){
     const ruta=url.substring(posicion+marca.length);
-    const {error:storageError}=await db.storage.from("fotos-categorias").remove([ruta]);
-    if(storageError){avisar("No se pudo eliminar el archivo: "+storageError.message);return;}
+
+    const {error:storageError}=await db.storage
+      .from("fotos-categorias")
+      .remove([ruta]);
+
+    if(storageError){
+      avisar("No se pudo eliminar el archivo: "+storageError.message);
+      return;
+    }
   }
+
   const {error}=await db.from("fotos_categorias").delete().eq("id",id);
-  if(error){avisar(error.message);return;}
-  avisar("Fotografía eliminada.");await cargarFotos();
+
+  if(error){
+    avisar(error.message);
+    return;
+  }
+
+  avisar("Fotografía eliminada.");
+  await cargarFotos();
 }
 
 verificarSesion();
