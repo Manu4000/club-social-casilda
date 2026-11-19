@@ -224,13 +224,157 @@ async function verificarSesion(){
   }
 }
 
+function escaparEquipo(valor){
+  return String(valor || "").replace(/[&<>"']/g, caracter => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  })[caracter]);
+}
+
+async function cargarEquipo(){
+  const contenedor = document.getElementById("listaEquipo");
+
+  let {data, error} = await db
+    .from("equipo_trabajo")
+    .select("*")
+    .order("orden", {ascending:true});
+
+  if(error){
+    contenedor.innerHTML = "<p>Error al cargar el equipo: " + escaparEquipo(error.message) + "</p>";
+    return;
+  }
+
+  if(!data || data.length === 0){
+    const integrantes = [
+      {nombre:"Manuel Torres", funcion:"Profesor", categorias:"2021/22, 2020, 2019, 2012, 2013, 2014 y 2015", orden:1, activo:true},
+      {nombre:"Ramón Aciarini", funcion:"Profesor", categorias:"2016, 2017 y 2018", orden:2, activo:true},
+      {nombre:"Francisco Moya", funcion:"Ayudante", categorias:"2019 y 2020", orden:3, activo:true},
+      {nombre:"Lautaro Mujica", funcion:"Ayudante", categorias:"2021/22, 2016, 2017 y 2018", orden:4, activo:true},
+      {nombre:"Matías Molina", funcion:"Ayudante", categorias:"2021/22, 2016, 2017 y 2018", orden:5, activo:true}
+    ];
+
+    const {error: errorInsertar} = await db
+      .from("equipo_trabajo")
+      .insert(integrantes);
+
+    if(errorInsertar){
+      contenedor.innerHTML = "<p>Error al crear el equipo: " + escaparEquipo(errorInsertar.message) + "</p>";
+      return;
+    }
+
+    const respuesta = await db
+      .from("equipo_trabajo")
+      .select("*")
+      .order("orden", {ascending:true});
+
+    data = respuesta.data;
+  }
+
+  contenedor.innerHTML = data.map(persona => `
+    <div class="item" style="margin:15px 0;padding:18px;border:1px solid #ddd;border-radius:12px;">
+      <h3>${escaparEquipo(persona.nombre)}</h3>
+
+      ${persona.imagen_url
+        ? `<img src="${escaparEquipo(persona.imagen_url)}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;">`
+        : `<div style="font-size:45px;margin:10px;">📷</div>`
+      }
+
+      <p><label>Nombre</label>
+      <input id="equipoNombre${persona.id}" value="${escaparEquipo(persona.nombre)}"></p>
+
+      <p><label>Función</label>
+      <input id="equipoFuncion${persona.id}" value="${escaparEquipo(persona.funcion)}"></p>
+
+      <p><label>Categorías</label>
+      <input id="equipoCategorias${persona.id}" value="${escaparEquipo(persona.categorias)}"></p>
+
+      <p><label>Fotografía</label>
+      <input type="file" id="equipoArchivo${persona.id}" accept="image/*"></p>
+
+      <button type="button" onclick="guardarIntegrante(${persona.id})">💾 Guardar datos</button>
+      <button type="button" onclick="subirFotoEquipo(${persona.id})">📸 Subir fotografía</button>
+    </div>
+  `).join("");
+}
+
+async function guardarIntegrante(id){
+  const nombre = document.getElementById("equipoNombre"+id).value.trim();
+  const funcion = document.getElementById("equipoFuncion"+id).value.trim();
+  const categorias = document.getElementById("equipoCategorias"+id).value.trim();
+
+  if(!nombre || !funcion){
+    alert("Completá el nombre y la función.");
+    return;
+  }
+
+  const {error} = await db
+    .from("equipo_trabajo")
+    .update({nombre, funcion, categorias})
+    .eq("id", id);
+
+  if(error){
+    alert("No se pudieron guardar los datos: " + error.message);
+    return;
+  }
+
+  alert("¡Datos actualizados!");
+  await cargarEquipo();
+}
+
+async function subirFotoEquipo(id){
+  const archivo = document.getElementById("equipoArchivo"+id).files[0];
+
+  if(!archivo){
+    alert("Primero seleccioná una fotografía.");
+    return;
+  }
+
+  if(archivo.size > 10 * 1024 * 1024){
+    alert("La fotografía no puede superar los 10 MB.");
+    return;
+  }
+
+  const nombreArchivo = archivo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const ruta = id + "/" + Date.now() + "-" + nombreArchivo;
+
+  const {error: errorSubida} = await db.storage
+    .from("equipo-fotos")
+    .upload(ruta, archivo, {upsert:true});
+
+  if(errorSubida){
+    alert("Error al subir la fotografía: " + errorSubida.message);
+    return;
+  }
+
+  const {data} = db.storage
+    .from("equipo-fotos")
+    .getPublicUrl(ruta);
+
+  const {error} = await db
+    .from("equipo_trabajo")
+    .update({imagen_url:data.publicUrl})
+    .eq("id", id);
+
+  if(error){
+    alert("La foto se subió, pero no se pudo guardar el enlace: " + error.message);
+    return;
+  }
+
+  alert("¡Fotografía subida correctamente!");
+  await cargarEquipo();
+}
+
 async function cargarTodo(){
   await Promise.all([
     cargarCategorias(),
     cargarActividades(),
     cargarClubes(),
     cargarCanchas(),
-    cargarPartidos()
+    cargarPartidos(),
+    cargarEquipo()
   ]);
 
   await cargarFotos();
