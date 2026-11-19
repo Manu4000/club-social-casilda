@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Administración | Club Social</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,sans-serif;background:#f1f5f2;margin:0;color:#183b2b}
@@ -23,8 +24,11 @@ button.danger{background:#b52b2b}
 #panel{display:none}
 #mensaje{padding:10px;color:#075c36}
 .foto-admin{width:120px;height:100px;object-fit:cover;border-radius:8px}
+.equipo-card{display:block!important;margin:15px 0!important;padding:18px!important;border:1px solid #ddd!important;border-radius:12px!important}
+.equipo-card img{width:120px;height:120px;object-fit:cover;border-radius:12px}
 </style>
 </head>
+
 <body>
 
 <header>
@@ -33,6 +37,7 @@ button.danger{background:#b52b2b}
 </header>
 
 <main>
+
 <section id="login">
 <h2>🔐 Ingreso de administrador</h2>
 <label>Correo electrónico</label>
@@ -71,27 +76,20 @@ button.danger{background:#b52b2b}
 <form id="formActividad">
 <label>Título</label>
 <input id="actTitulo" placeholder="Ej: Torneo de fútbol infantil" required>
-
 <label>Descripción</label>
 <textarea id="actDescripcion" placeholder="Información de la actividad"></textarea>
-
 <label>Tipo de actividad</label>
 <input id="actCategoria" placeholder="Ej: Fútbol infantil, Torneo, Comunicado" value="Fútbol infantil">
-
 <label>¿A quién va dirigido?</label>
 <select id="actCategoriaId">
 <option value="">Todas las categorías</option>
 </select>
-
 <label>Fecha</label>
 <input id="actFecha" type="date">
-
 <label>Horario</label>
 <input id="actHorario" placeholder="Ej: 15:00 hs">
-
 <label>Lugar</label>
 <input id="actLugar" placeholder="Lugar de la actividad">
-
 <button type="submit">Publicar actividad</button>
 </form>
 <div id="listaActividades"></div>
@@ -126,22 +124,16 @@ button.danger{background:#b52b2b}
 <form id="formPartido">
 <label>Categoría</label>
 <select id="partidoCategoria" required></select>
-
 <label>Club local</label>
 <select id="clubLocal" required></select>
-
 <label>Club visitante</label>
 <select id="clubVisitante" required></select>
-
 <label>Fecha</label>
 <input id="partidoFecha" type="date" required>
-
 <label>Horario</label>
 <input id="partidoHorario" placeholder="Ej: 10:30 hs">
-
 <label>Cancha</label>
 <select id="partidoCancha"></select>
-
 <button type="submit">Agregar partido</button>
 </form>
 <div id="listaPartidos"></div>
@@ -150,25 +142,20 @@ button.danger{background:#b52b2b}
 <section>
 <h2>👥 Equipo de trabajo</h2>
 <p>Administrá los profesores y ayudantes de la escuelita. Podés actualizar sus datos y fotografías.</p>
-
 <div id="listaEquipo">
-  <p>Cargando equipo de trabajo...</p>
+<p>Cargando equipo de trabajo...</p>
 </div>
 </section>
 
 <section>
 <h2>📸 Fotografías de las categorías</h2>
 <p>Subí fotos de entrenamientos, partidos y encuentros. Las familias podrán verlas en la página de cada categoría.</p>
-
 <label>Seleccionar categoría</label>
 <select id="fotoCategoria"></select>
-
 <label>Elegir fotografía</label>
 <input id="archivoFoto" type="file" accept="image/*">
-
 <label>Descripción de la foto (opcional)</label>
 <input id="descripcionFoto" placeholder="Ej: Entrenamiento del sábado">
-
 <button onclick="subirFoto()">Subir fotografía</button>
 <div id="galeriaAdmin"></div>
 </section>
@@ -191,6 +178,12 @@ function escapar(valor){
   }[c]));
 }
 
+function escaparEquipo(valor){
+  return String(valor ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]);
+}
+
 function avisar(texto){
   document.getElementById("mensaje").textContent = texto;
 }
@@ -202,7 +195,8 @@ async function iniciarSesion(){
   const {error} = await db.auth.signInWithPassword({email,password});
 
   if(error){
-    document.getElementById("errorLogin").textContent = "No se pudo ingresar: " + error.message;
+    document.getElementById("errorLogin").textContent =
+      "No se pudo ingresar: " + error.message;
     return;
   }
 
@@ -224,80 +218,103 @@ async function verificarSesion(){
   }
 }
 
-function escaparEquipo(valor){
-  return String(valor || "").replace(/[&<>"']/g, caracter => ({
-    "&":"&amp;",
-    "<":"&lt;",
-    ">":"&gt;",
-    '"':"&quot;",
-    "'":"&#39;"
-  })[caracter]);
-}
+/* EQUIPO DE TRABAJO */
 
 async function cargarEquipo(){
   const contenedor = document.getElementById("listaEquipo");
 
-  let {data, error} = await db
-    .from("equipo_trabajo")
-    .select("*")
-    .order("orden", {ascending:true});
+  contenedor.innerHTML = "<p>Conectando con la base de datos...</p>";
 
-  if(error){
-    contenedor.innerHTML = "<p>Error al cargar el equipo: " + escaparEquipo(error.message) + "</p>";
-    return;
-  }
-
-  if(!data || data.length === 0){
-    const integrantes = [
-      {nombre:"Manuel Torres", funcion:"Profesor", categorias:"2021/22, 2020, 2019, 2012, 2013, 2014 y 2015", orden:1, activo:true},
-      {nombre:"Ramón Aciarini", funcion:"Profesor", categorias:"2016, 2017 y 2018", orden:2, activo:true},
-      {nombre:"Francisco Moya", funcion:"Ayudante", categorias:"2019 y 2020", orden:3, activo:true},
-      {nombre:"Lautaro Mujica", funcion:"Ayudante", categorias:"2021/22, 2016, 2017 y 2018", orden:4, activo:true},
-      {nombre:"Matías Molina", funcion:"Ayudante", categorias:"2021/22, 2016, 2017 y 2018", orden:5, activo:true}
-    ];
-
-    const {error: errorInsertar} = await db
+  try{
+    let {data,error} = await db
       .from("equipo_trabajo")
-      .insert(integrantes);
+      .select("*")
+      .order("orden",{ascending:true});
 
-    if(errorInsertar){
-      contenedor.innerHTML = "<p>Error al crear el equipo: " + escaparEquipo(errorInsertar.message) + "</p>";
+    if(error){
+      contenedor.innerHTML =
+        "<p>Error al consultar el equipo: " +
+        escaparEquipo(error.message) + "</p>";
       return;
     }
 
-    const respuesta = await db
-      .from("equipo_trabajo")
-      .select("*")
-      .order("orden", {ascending:true});
+    if(!data || data.length === 0){
 
-    data = respuesta.data;
-  }
+      const integrantes = [
+        {nombre:"Manuel Torres",funcion:"Profesor",categorias:"2021/22, 2020, 2019, 2012, 2013, 2014 y 2015",orden:1,activo:true},
+        {nombre:"Ramón Aciarini",funcion:"Profesor",categorias:"2016, 2017 y 2018",orden:2,activo:true},
+        {nombre:"Francisco Moya",funcion:"Ayudante",categorias:"2019 y 2020",orden:3,activo:true},
+        {nombre:"Lautaro Mujica",funcion:"Ayudante",categorias:"2021/22, 2016, 2017 y 2018",orden:4,activo:true},
+        {nombre:"Matías Molina",funcion:"Ayudante",categorias:"2021/22, 2016, 2017 y 2018",orden:5,activo:true}
+      ];
 
-  contenedor.innerHTML = data.map(persona => `
-    <div class="item" style="margin:15px 0;padding:18px;border:1px solid #ddd;border-radius:12px;">
-      <h3>${escaparEquipo(persona.nombre)}</h3>
+      const {error:errorInsertar} = await db
+        .from("equipo_trabajo")
+        .insert(integrantes);
 
-      ${persona.imagen_url
-        ? `<img src="${escaparEquipo(persona.imagen_url)}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;">`
-        : `<div style="font-size:45px;margin:10px;">📷</div>`
+      if(errorInsertar){
+        contenedor.innerHTML =
+          "<p>Error al crear los integrantes: " +
+          escaparEquipo(errorInsertar.message) + "</p>";
+        return;
       }
 
-      <p><label>Nombre</label>
-      <input id="equipoNombre${persona.id}" value="${escaparEquipo(persona.nombre)}"></p>
+      const respuesta = await db
+        .from("equipo_trabajo")
+        .select("*")
+        .order("orden",{ascending:true});
 
-      <p><label>Función</label>
-      <input id="equipoFuncion${persona.id}" value="${escaparEquipo(persona.funcion)}"></p>
+      if(respuesta.error){
+        contenedor.innerHTML =
+          "<p>Error al recuperar los integrantes: " +
+          escaparEquipo(respuesta.error.message) + "</p>";
+        return;
+      }
 
-      <p><label>Categorías</label>
-      <input id="equipoCategorias${persona.id}" value="${escaparEquipo(persona.categorias)}"></p>
+      data = respuesta.data;
+    }
 
-      <p><label>Fotografía</label>
-      <input type="file" id="equipoArchivo${persona.id}" accept="image/*"></p>
+    if(!data || data.length === 0){
+      contenedor.innerHTML = "<p>No se encontraron integrantes.</p>";
+      return;
+    }
 
-      <button type="button" onclick="guardarIntegrante(${persona.id})">💾 Guardar datos</button>
-      <button type="button" onclick="subirFotoEquipo(${persona.id})">📸 Subir fotografía</button>
-    </div>
-  `).join("");
+    contenedor.innerHTML = data.map(persona => `
+      <div class="item equipo-card">
+        <h3>${escaparEquipo(persona.nombre)}</h3>
+
+        ${persona.imagen_url
+          ? `<img src="${escaparEquipo(persona.imagen_url)}" alt="Foto de ${escaparEquipo(persona.nombre)}">`
+          : `<div style="font-size:45px;margin:10px;">📷</div>`
+        }
+
+        <label>Nombre</label>
+        <input id="equipoNombre${persona.id}" value="${escaparEquipo(persona.nombre)}">
+
+        <label>Función</label>
+        <input id="equipoFuncion${persona.id}" value="${escaparEquipo(persona.funcion)}">
+
+        <label>Categorías</label>
+        <input id="equipoCategorias${persona.id}" value="${escaparEquipo(persona.categorias)}">
+
+        <label>Fotografía</label>
+        <input type="file" id="equipoArchivo${persona.id}" accept="image/*">
+
+        <button type="button" onclick="guardarIntegrante(${persona.id})">
+          💾 Guardar datos
+        </button>
+
+        <button type="button" onclick="subirFotoEquipo(${persona.id})">
+          📸 Subir fotografía
+        </button>
+      </div>
+    `).join("");
+
+  }catch(error){
+    contenedor.innerHTML =
+      "<p>Error inesperado: " +
+      escaparEquipo(error.message || error) + "</p>";
+  }
 }
 
 async function guardarIntegrante(id){
@@ -312,8 +329,8 @@ async function guardarIntegrante(id){
 
   const {error} = await db
     .from("equipo_trabajo")
-    .update({nombre, funcion, categorias})
-    .eq("id", id);
+    .update({nombre,funcion,categorias})
+    .eq("id",id);
 
   if(error){
     alert("No se pudieron guardar los datos: " + error.message);
@@ -337,26 +354,26 @@ async function subirFotoEquipo(id){
     return;
   }
 
-  const nombreArchivo = archivo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const nombreArchivo = archivo.name.replace(/[^a-zA-Z0-9._-]/g,"_");
   const ruta = id + "/" + Date.now() + "-" + nombreArchivo;
 
-  const {error: errorSubida} = await db.storage
+  const {error:errorSubida} = await db.storage
     .from("equipo-fotos")
-    .upload(ruta, archivo, {upsert:true});
+    .upload(ruta,archivo,{upsert:true});
 
   if(errorSubida){
     alert("Error al subir la fotografía: " + errorSubida.message);
     return;
   }
 
-  const {data} = db.storage
+  const {data:urlData} = db.storage
     .from("equipo-fotos")
     .getPublicUrl(ruta);
 
   const {error} = await db
     .from("equipo_trabajo")
-    .update({imagen_url:data.publicUrl})
-    .eq("id", id);
+    .update({imagen_url:urlData.publicUrl})
+    .eq("id",id);
 
   if(error){
     alert("La foto se subió, pero no se pudo guardar el enlace: " + error.message);
@@ -366,6 +383,8 @@ async function subirFotoEquipo(id){
   alert("¡Fotografía subida correctamente!");
   await cargarEquipo();
 }
+
+/* CARGA GENERAL */
 
 async function cargarTodo(){
   await Promise.all([
@@ -380,43 +399,49 @@ async function cargarTodo(){
   await cargarFotos();
 }
 
+/* CATEGORÍAS */
+
 async function cargarCategorias(){
-  const {data,error} = await db.from("categorias").select("*").order("nombre");
+  const {data,error} = await db
+    .from("categorias")
+    .select("*")
+    .order("nombre");
 
   if(error){
-    avisar("Error al cargar categorías: "+error.message);
+    avisar("Error al cargar categorías: " + error.message);
     return;
   }
 
   categorias = data || [];
 
-  document.getElementById("listaCategorias").innerHTML = categorias.map(c=>`
-    <div class="item">
-      <div>
-        <strong>${escapar(c.nombre)}</strong><br>
-        <span class="small">${escapar(c.descripcion)}</span><br>
-        <span class="small">${escapar(c.dias_horarios)}</span>
+  document.getElementById("listaCategorias").innerHTML =
+    categorias.map(c => `
+      <div class="item">
+        <div>
+          <strong>${escapar(c.nombre)}</strong><br>
+          <span class="small">${escapar(c.descripcion)}</span><br>
+          <span class="small">${escapar(c.dias_horarios)}</span>
+        </div>
+        <div>
+          <button onclick="editarCategoria(${c.id})">Editar</button>
+          <button class="danger" onclick="eliminarRegistro('categorias',${c.id})">Eliminar</button>
+        </div>
       </div>
-      <div>
-        <button onclick="editarCategoria(${c.id})">Editar</button>
-        <button class="danger" onclick="eliminarRegistro('categorias',${c.id})">Eliminar</button>
-      </div>
-    </div>
-  `).join("") || "<p>Aún no hay categorías.</p>";
+    `).join("") || "<p>Aún no hay categorías.</p>";
 
-  const opciones = categorias.map(c=>
+  const opciones = categorias.map(c =>
     `<option value="${c.id}">${escapar(c.nombre)}</option>`
   ).join("");
 
   document.getElementById("fotoCategoria").innerHTML =
-    '<option value="">Seleccionar categoría</option>'+opciones;
+    '<option value="">Seleccionar categoría</option>' + opciones;
 
   document.getElementById("actCategoriaId").innerHTML =
-    '<option value="">Todas las categorías</option>'+opciones;
+    '<option value="">Todas las categorías</option>' + opciones;
 
   document.getElementById("partidoCategoria").innerHTML =
-    '<option value="">Seleccionar categoría</option>'+
-    categorias.map(c=>
+    '<option value="">Seleccionar categoría</option>' +
+    categorias.map(c =>
       `<option value="${escapar(c.nombre)}">${escapar(c.nombre)}</option>`
     ).join("");
 }
@@ -424,13 +449,13 @@ async function cargarCategorias(){
 document.getElementById("formCategoria").addEventListener("submit",async e=>{
   e.preventDefault();
 
-  const registro={
+  const registro = {
     nombre:document.getElementById("catNombre").value,
     descripcion:document.getElementById("catDescripcion").value,
     dias_horarios:document.getElementById("catHorario").value
   };
 
-  const {error}=await db.from("categorias").insert(registro);
+  const {error} = await db.from("categorias").insert(registro);
 
   if(error){
     avisar(error.message);
@@ -443,18 +468,18 @@ document.getElementById("formCategoria").addEventListener("submit",async e=>{
 });
 
 async function editarCategoria(id){
-  const c=categorias.find(x=>x.id===id);
+  const c = categorias.find(x => x.id === id);
 
-  const nombre=prompt("Nombre de la categoría:",c.nombre);
-  if(nombre===null)return;
+  const nombre = prompt("Nombre de la categoría:",c.nombre);
+  if(nombre === null)return;
 
-  const descripcion=prompt("Descripción:",c.descripcion||"");
-  if(descripcion===null)return;
+  const descripcion = prompt("Descripción:",c.descripcion || "");
+  if(descripcion === null)return;
 
-  const horario=prompt("Días y horarios:",c.dias_horarios||"");
-  if(horario===null)return;
+  const horario = prompt("Días y horarios:",c.dias_horarios || "");
+  if(horario === null)return;
 
-  const {error}=await db.from("categorias")
+  const {error} = await db.from("categorias")
     .update({nombre,descripcion,dias_horarios:horario})
     .eq("id",id);
 
@@ -467,99 +492,105 @@ async function editarCategoria(id){
   avisar("Categoría actualizada.");
 }
 
+/* ACTIVIDADES */
+
 async function cargarActividades(){
-  const {data,error}=await db.from("actividades")
+  const {data,error} = await db.from("actividades")
     .select("*, categorias(nombre)")
     .order("fecha",{ascending:true});
 
   if(error){
-    avisar("Error al cargar actividades: "+error.message);
+    avisar("Error al cargar actividades: " + error.message);
     return;
   }
 
-  document.getElementById("listaActividades").innerHTML=(data||[]).map(a=>`
-    <div class="item">
-      <div>
-        <strong>${escapar(a.titulo)}</strong><br>
-        ${escapar(a.descripcion)}<br>
-        <span class="small">
-          ${escapar(a.categoria)} ·
-          ${escapar(a.categorias?.nombre || "Todas las categorías")} ·
-          ${escapar(a.fecha)} ·
-          ${escapar(a.horario)} ·
-          ${escapar(a.lugar)}
-        </span>
+  document.getElementById("listaActividades").innerHTML =
+    (data || []).map(a => `
+      <div class="item">
+        <div>
+          <strong>${escapar(a.titulo)}</strong><br>
+          ${escapar(a.descripcion)}<br>
+          <span class="small">
+            ${escapar(a.categoria)} ·
+            ${escapar(a.categorias?.nombre || "Todas las categorías")} ·
+            ${escapar(a.fecha)} ·
+            ${escapar(a.horario)} ·
+            ${escapar(a.lugar)}
+          </span>
+        </div>
+        <button class="danger" onclick="eliminarRegistro('actividades',${a.id})">Eliminar</button>
       </div>
-      <button class="danger" onclick="eliminarRegistro('actividades',${a.id})">Eliminar</button>
-    </div>
-  `).join("") || "<p>Aún no hay actividades.</p>";
+    `).join("") || "<p>Aún no hay actividades.</p>";
 }
 
 document.getElementById("formActividad").addEventListener("submit",async e=>{
   e.preventDefault();
 
-  const registro={
+  const registro = {
     titulo:document.getElementById("actTitulo").value,
     descripcion:document.getElementById("actDescripcion").value,
     categoria:document.getElementById("actCategoria").value,
     categoria_id:document.getElementById("actCategoriaId").value
       ? Number(document.getElementById("actCategoriaId").value)
       : null,
-    fecha:document.getElementById("actFecha").value||null,
+    fecha:document.getElementById("actFecha").value || null,
     horario:document.getElementById("actHorario").value,
     lugar:document.getElementById("actLugar").value,
     publicado:true
   };
 
-  const {error}=await db.from("actividades").insert(registro);
+  const {error} = await db.from("actividades").insert(registro);
 
   if(error){
-    avisar("No se pudo publicar: "+error.message);
+    avisar("No se pudo publicar: " + error.message);
     return;
   }
 
   e.target.reset();
-  document.getElementById("actCategoria").value="Fútbol infantil";
+  document.getElementById("actCategoria").value = "Fútbol infantil";
 
   avisar("Actividad publicada.");
   await cargarActividades();
 });
 
+/* CLUBES */
+
 async function cargarClubes(){
-  const {data,error}=await db.from("clubes").select("*").order("nombre");
+  const {data,error} = await db.from("clubes").select("*").order("nombre");
 
   if(error){
     avisar(error.message);
     return;
   }
 
-  clubes=data||[];
+  clubes = data || [];
 
-  document.getElementById("listaClubes").innerHTML=clubes.map(c=>`
-    <div class="item">
-      ${c.escudo_url?`<img src="${escapar(c.escudo_url)}" alt="">`:""}
-      <strong>${escapar(c.nombre)}</strong>
-      <button class="danger" onclick="eliminarRegistro('clubes',${c.id})">Eliminar</button>
-    </div>
-  `).join("") || "<p>Aún no hay clubes.</p>";
+  document.getElementById("listaClubes").innerHTML =
+    clubes.map(c => `
+      <div class="item">
+        ${c.escudo_url ? `<img src="${escapar(c.escudo_url)}" alt="">` : ""}
+        <strong>${escapar(c.nombre)}</strong>
+        <button class="danger" onclick="eliminarRegistro('clubes',${c.id})">Eliminar</button>
+      </div>
+    `).join("") || "<p>Aún no hay clubes.</p>";
 
-  const opciones=clubes.map(c=>
+  const opciones = clubes.map(c =>
     `<option value="${c.id}">${escapar(c.nombre)}</option>`
   ).join("");
 
   document.getElementById("clubLocal").innerHTML =
-    '<option value="">Seleccionar club</option>'+opciones;
+    '<option value="">Seleccionar club</option>' + opciones;
 
   document.getElementById("clubVisitante").innerHTML =
-    '<option value="">Seleccionar club</option>'+opciones;
+    '<option value="">Seleccionar club</option>' + opciones;
 }
 
 document.getElementById("formClub").addEventListener("submit",async e=>{
   e.preventDefault();
 
-  const {error}=await db.from("clubes").insert({
+  const {error} = await db.from("clubes").insert({
     nombre:document.getElementById("clubNombre").value,
-    escudo_url:document.getElementById("clubEscudo").value||null
+    escudo_url:document.getElementById("clubEscudo").value || null
   });
 
   if(error){
@@ -572,29 +603,32 @@ document.getElementById("formClub").addEventListener("submit",async e=>{
   await cargarClubes();
 });
 
+/* CANCHAS */
+
 async function cargarCanchas(){
-  const {data,error}=await db.from("canchas").select("*").order("nombre");
+  const {data,error} = await db.from("canchas").select("*").order("nombre");
 
   if(error){
     avisar(error.message);
     return;
   }
 
-  canchas=data||[];
+  canchas = data || [];
 
-  document.getElementById("listaCanchas").innerHTML=canchas.map(c=>`
-    <div class="item">
-      <div>
-        <strong>${escapar(c.nombre)}</strong><br>
-        <span class="small">${escapar(c.ubicacion)}</span>
+  document.getElementById("listaCanchas").innerHTML =
+    canchas.map(c => `
+      <div class="item">
+        <div>
+          <strong>${escapar(c.nombre)}</strong><br>
+          <span class="small">${escapar(c.ubicacion)}</span>
+        </div>
+        <button class="danger" onclick="eliminarRegistro('canchas',${c.id})">Eliminar</button>
       </div>
-      <button class="danger" onclick="eliminarRegistro('canchas',${c.id})">Eliminar</button>
-    </div>
-  `).join("") || "<p>Aún no hay canchas.</p>";
+    `).join("") || "<p>Aún no hay canchas.</p>";
 
   document.getElementById("partidoCancha").innerHTML =
-    '<option value="">Seleccionar cancha</option>'+
-    canchas.map(c=>
+    '<option value="">Seleccionar cancha</option>' +
+    canchas.map(c =>
       `<option value="${c.id}">${escapar(c.nombre)}</option>`
     ).join("");
 }
@@ -602,7 +636,7 @@ async function cargarCanchas(){
 document.getElementById("formCancha").addEventListener("submit",async e=>{
   e.preventDefault();
 
-  const {error}=await db.from("canchas").insert({
+  const {error} = await db.from("canchas").insert({
     nombre:document.getElementById("canchaNombre").value,
     ubicacion:document.getElementById("canchaUbicacion").value
   });
@@ -617,51 +651,54 @@ document.getElementById("formCancha").addEventListener("submit",async e=>{
   await cargarCanchas();
 });
 
+/* PARTIDOS */
+
 async function cargarPartidos(){
-  const {data,error}=await db.from("partidos")
+  const {data,error} = await db.from("partidos")
     .select("*, club_local:clubes!partidos_club_local_id_fkey(nombre), club_visitante:clubes!partidos_club_visitante_id_fkey(nombre), canchas(nombre)")
     .order("fecha");
 
   if(error){
-    avisar("Error al cargar partidos: "+error.message);
+    avisar("Error al cargar partidos: " + error.message);
     return;
   }
 
-  document.getElementById("listaPartidos").innerHTML=(data||[]).map(p=>`
-    <div class="item">
-      <div>
-        <strong>${escapar(p.categoria)}</strong><br>
-        ${escapar(p.club_local?.nombre||"Club local")} vs
-        ${escapar(p.club_visitante?.nombre||"Club visitante")}<br>
-        <span class="small">
-          ${escapar(p.fecha)} ·
-          ${escapar(p.horario)} ·
-          ${escapar(p.canchas?.nombre||"")}
-        </span>
+  document.getElementById("listaPartidos").innerHTML =
+    (data || []).map(p => `
+      <div class="item">
+        <div>
+          <strong>${escapar(p.categoria)}</strong><br>
+          ${escapar(p.club_local?.nombre || "Club local")} vs
+          ${escapar(p.club_visitante?.nombre || "Club visitante")}<br>
+          <span class="small">
+            ${escapar(p.fecha)} ·
+            ${escapar(p.horario)} ·
+            ${escapar(p.canchas?.nombre || "")}
+          </span>
+        </div>
+        <button class="danger" onclick="eliminarRegistro('partidos',${p.id})">Eliminar</button>
       </div>
-      <button class="danger" onclick="eliminarRegistro('partidos',${p.id})">Eliminar</button>
-    </div>
-  `).join("") || "<p>Aún no hay partidos cargados.</p>";
+    `).join("") || "<p>Aún no hay partidos cargados.</p>";
 }
 
 document.getElementById("formPartido").addEventListener("submit",async e=>{
   e.preventDefault();
 
-  const local=document.getElementById("clubLocal").value;
-  const visitante=document.getElementById("clubVisitante").value;
+  const local = document.getElementById("clubLocal").value;
+  const visitante = document.getElementById("clubVisitante").value;
 
-  if(local===visitante){
+  if(local === visitante){
     avisar("Elegí dos clubes diferentes.");
     return;
   }
 
-  const {error}=await db.from("partidos").insert({
+  const {error} = await db.from("partidos").insert({
     categoria:document.getElementById("partidoCategoria").value,
     club_local_id:local,
     club_visitante_id:visitante,
     fecha:document.getElementById("partidoFecha").value,
     horario:document.getElementById("partidoHorario").value,
-    cancha_id:document.getElementById("partidoCancha").value||null
+    cancha_id:document.getElementById("partidoCancha").value || null
   });
 
   if(error){
@@ -674,13 +711,15 @@ document.getElementById("formPartido").addEventListener("submit",async e=>{
   await cargarPartidos();
 });
 
+/* ELIMINAR REGISTROS */
+
 async function eliminarRegistro(tabla,id){
   if(!confirm("¿Seguro que querés eliminar este registro?"))return;
 
-  const {error}=await db.from(tabla).delete().eq("id",id);
+  const {error} = await db.from(tabla).delete().eq("id",id);
 
   if(error){
-    avisar("No se pudo eliminar: "+error.message);
+    avisar("No se pudo eliminar: " + error.message);
     return;
   }
 
@@ -688,10 +727,12 @@ async function eliminarRegistro(tabla,id){
   await cargarTodo();
 }
 
+/* FOTOGRAFÍAS DE CATEGORÍAS */
+
 async function subirFoto(){
-  const categoriaId=document.getElementById("fotoCategoria").value;
-  const archivo=document.getElementById("archivoFoto").files[0];
-  const descripcion=document.getElementById("descripcionFoto").value;
+  const categoriaId = document.getElementById("fotoCategoria").value;
+  const archivo = document.getElementById("archivoFoto").files[0];
+  const descripcion = document.getElementById("descripcionFoto").value;
 
   if(!categoriaId){
     avisar("Primero seleccioná una categoría.");
@@ -703,89 +744,90 @@ async function subirFoto(){
     return;
   }
 
-  if(archivo.size>10*1024*1024){
+  if(archivo.size > 10 * 1024 * 1024){
     avisar("La imagen no puede superar los 10 MB.");
     return;
   }
 
-  const extension=archivo.name.split(".").pop();
-  const nombreArchivo=`${categoriaId}/${Date.now()}.${extension}`;
+  const extension = archivo.name.split(".").pop();
+  const nombreArchivo = `${categoriaId}/${Date.now()}.${extension}`;
 
-  const {error:uploadError}=await db.storage
+  const {error:uploadError} = await db.storage
     .from("fotos-categorias")
     .upload(nombreArchivo,archivo);
 
   if(uploadError){
-    avisar("Error al subir la imagen: "+uploadError.message);
+    avisar("Error al subir la imagen: " + uploadError.message);
     return;
   }
 
-  const {data:urlData}=db.storage
+  const {data:urlData} = db.storage
     .from("fotos-categorias")
     .getPublicUrl(nombreArchivo);
 
-  const {error}=await db.from("fotos_categorias").insert({
+  const {error} = await db.from("fotos_categorias").insert({
     categoria_id:Number(categoriaId),
     imagen_url:urlData.publicUrl,
     descripcion
   });
 
   if(error){
-    avisar("La imagen se subió, pero no se pudo guardar el registro: "+error.message);
+    avisar("La imagen se subió, pero no se pudo guardar el registro: " + error.message);
     return;
   }
 
-  document.getElementById("archivoFoto").value="";
-  document.getElementById("descripcionFoto").value="";
+  document.getElementById("archivoFoto").value = "";
+  document.getElementById("descripcionFoto").value = "";
 
   avisar("¡Fotografía subida correctamente!");
   await cargarFotos();
 }
 
 async function cargarFotos(){
-  const {data,error}=await db.from("fotos_categorias")
+  const {data,error} = await db.from("fotos_categorias")
     .select("*, categorias(nombre)")
     .order("created_at",{ascending:false});
 
   if(error){
-    avisar("Error al cargar fotografías: "+error.message);
+    avisar("Error al cargar fotografías: " + error.message);
     return;
   }
 
-  document.getElementById("galeriaAdmin").innerHTML=(data||[]).map(f=>`
-    <div class="item">
-      <div>
-        <img class="foto-admin" src="${escapar(f.imagen_url)}" alt="">
-        <p>
-          <strong>${escapar(f.categorias?.nombre||"Categoría")}</strong><br>
-          <span class="small">${escapar(f.descripcion)}</span>
-        </p>
+  document.getElementById("galeriaAdmin").innerHTML =
+    (data || []).map(f => `
+      <div class="item">
+        <div>
+          <img class="foto-admin" src="${escapar(f.imagen_url)}" alt="">
+          <p>
+            <strong>${escapar(f.categorias?.nombre || "Categoría")}</strong><br>
+            <span class="small">${escapar(f.descripcion)}</span>
+          </p>
+        </div>
+        <button class="danger" onclick="eliminarFoto(${f.id},'${escapar(f.imagen_url)}')">Eliminar foto</button>
       </div>
-      <button class="danger" onclick="eliminarFoto(${f.id},'${escapar(f.imagen_url)}')">Eliminar foto</button>
-    </div>
-  `).join("") || "<p>Todavía no hay fotografías cargadas.</p>";
+    `).join("") || "<p>Todavía no hay fotografías cargadas.</p>";
 }
 
 async function eliminarFoto(id,url){
   if(!confirm("¿Querés eliminar esta fotografía?"))return;
 
-  const marca="/fotos-categorias/";
-  const posicion=url.indexOf(marca);
+  const marca = "/fotos-categorias/";
+  const posicion = url.indexOf(marca);
 
-  if(posicion>=0){
-    const ruta=url.substring(posicion+marca.length);
+  if(posicion >= 0){
+    const ruta = url.substring(posicion + marca.length);
 
-    const {error:storageError}=await db.storage
+    const {error:storageError} = await db.storage
       .from("fotos-categorias")
       .remove([ruta]);
 
     if(storageError){
-      avisar("No se pudo eliminar el archivo: "+storageError.message);
+      avisar("No se pudo eliminar el archivo: " + storageError.message);
       return;
     }
   }
 
-  const {error}=await db.from("fotos_categorias").delete().eq("id",id);
+  const {error} = await db.from("fotos_categorias").delete().eq("id",id);
 
   if(error){
     avisar(error.message);
