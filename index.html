@@ -66,10 +66,75 @@ nav{width:100%;justify-content:space-between}
 .hero p{font-size:16px}
 section{padding:45px 0}
 }
+ 
+/* BOTÓN DE MODO CLARO Y OSCURO */
+#botonTema{
+  background:#e8f2eb;
+  color:#075c36;
+  border:1px solid #c9dfcf;
+  border-radius:50%;
+  width:44px;
+  height:44px;
+  font-size:21px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+
+/* MODO OSCURO */
+html[data-tema="oscuro"] body{
+  background:#111b15;
+  color:#e5eee7;
+}
+
+html[data-tema="oscuro"] header{
+  background:#101d15;
+}
+
+html[data-tema="oscuro"] section{
+  background:#19271e !important;
+  color:#e5eee7 !important;
+}
+
+html[data-tema="oscuro"] article{
+  background:#203329 !important;
+  color:#e5eee7 !important;
+  border-color:#354b3c !important;
+}
+
+html[data-tema="oscuro"] h1,
+html[data-tema="oscuro"] h2,
+html[data-tema="oscuro"] h3,
+html[data-tema="oscuro"] p,
+html[data-tema="oscuro"] label{
+  color:#e5eee7;
+}
+
+html[data-tema="oscuro"] a{
+  color:#a9dfb8;
+}
+
+html[data-tema="oscuro"] input,
+html[data-tema="oscuro"] select,
+html[data-tema="oscuro"] textarea{
+  background:#26382c;
+  color:white;
+  border-color:#49604e;
+}
+
+html[data-tema="oscuro"] #botonTema{
+  background:#344a39;
+  color:#ffe49a;
+  border-color:#536c58;
+}
+
 </style>
 </head>
 <body>
 <div class="topline"></div>
+
 
 <header>
 <div class="wrap nav">
@@ -77,6 +142,7 @@ section{padding:45px 0}
 <img src="/images-2.jpeg" alt="Escudo del Club Social Casilda">
 <span>Club Social Casilda<small>Escuelita de Fútbol</small></span>
 </a>
+
 <nav>
 <a href="#inicio">Inicio</a>
 <a href="#actividades">Actividades</a>
@@ -85,6 +151,11 @@ section{padding:45px 0}
 <a href="#contacto">Contacto</a>
 <a href="/admin.html">🔐 Administración</a>
 </nav>
+
+<button id="botonTema" type="button" aria-label="Cambiar tema" title="Cambiar modo de visualización">
+🌙
+</button>
+
 </div>
 </header>
 
@@ -453,5 +524,31 @@ async function iniciarPagina(){
 
 iniciarPagina();
 </script>
+ 
+<script>
+const botonTema = document.getElementById("botonTema");
+
+function aplicarTema(tema){
+  document.documentElement.setAttribute("data-tema", tema);
+
+  botonTema.textContent = tema === "oscuro" ? "☀️" : "🌙";
+
+  botonTema.title = tema === "oscuro"
+    ? "Activar modo claro"
+    : "Activar modo oscuro";
+
+  localStorage.setItem("temaClubSocial", tema);
+}
+
+const temaGuardado = localStorage.getItem("temaClubSocial") || "claro";
+
+aplicarTema(temaGuardado);
+
+botonTema.addEventListener("click", () => {
+  const temaActual = document.documentElement.getAttribute("data-tema");
+  aplicarTema(temaActual === "oscuro" ? "claro" : "oscuro");
+});
+</script>
+
 </body>
 </html>
