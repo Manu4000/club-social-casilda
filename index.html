@@ -201,7 +201,57 @@ function tarjetaVacia(contenedor,texto){
  caja.appendChild(fuerte);
  contenedor.appendChild(caja);
 }
+async function cargarCategorias(){
+ const contenedor=document.getElementById("listaCategorias");
 
+ const {data,error}=await db
+  .from("categorias")
+  .select("id,nombre,descripcion,imagen_url")
+  .eq("publicado",true)
+  .order("nombre",{ascending:false});
+
+ if(error){
+  tarjetaVacia(contenedor,"No pudimos cargar las categorías.");
+  console.error(error);
+  return;
+ }
+
+ if(!data||data.length===0){
+  tarjetaVacia(contenedor,"Próximamente publicaremos nuestras categorías.");
+  return;
+ }
+
+ contenedor.innerHTML="";
+
+ data.forEach(categoria=>{
+  const tarjeta=document.createElement("article");
+  tarjeta.className="card";
+
+  if(categoria.imagen_url){
+   const foto=document.createElement("img");
+   foto.src=categoria.imagen_url;
+   foto.alt="Categoría "+categoria.nombre;
+   foto.style="width:100%;height:170px;object-fit:cover;border-radius:12px;margin-bottom:12px";
+   tarjeta.appendChild(foto);
+  }
+
+  const titulo=document.createElement("h3");
+  titulo.textContent="Categoría "+categoria.nombre;
+  tarjeta.appendChild(titulo);
+
+  const descripcion=document.createElement("p");
+  descripcion.textContent=categoria.descripcion||"Conocé las novedades de este equipo.";
+  tarjeta.appendChild(descripcion);
+
+  const enlace=document.createElement("a");
+  enlace.className="button";
+  enlace.href="/categoria.html?cat="+encodeURIComponent(categoria.nombre);
+  enlace.textContent="Ver categoría →";
+  tarjeta.appendChild(enlace);
+
+  contenedor.appendChild(tarjeta);
+ });
+}
 async function cargarActividades(){
  const contenedor=document.getElementById("listaActividades");
  const {data,error}=await db.from("actividades")
