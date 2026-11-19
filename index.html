@@ -252,11 +252,13 @@ async function cargarCategorias(){
   contenedor.appendChild(tarjeta);
  });
 }
+
 async function cargarActividades(){
  const contenedor=document.getElementById("listaActividades");
  const {data,error}=await db.from("actividades")
   .select("id,titulo,descripcion,categoria,fecha,horario,lugar")
   .eq("publicado",true)
+  .is("categoria_id",null)
   .order("fecha",{ascending:true,nullsFirst:false});
 
  if(error){
@@ -292,6 +294,7 @@ async function cargarActividades(){
   contenedor.appendChild(tarjeta);
  });
 }
+
 
 async function cargarPartidos(){
  const contenedor=document.getElementById("listaPartidos");
