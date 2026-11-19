@@ -130,6 +130,109 @@ html[data-tema="oscuro"] #botonTema{
   border-color:#536c58;
 }
 
+/* CARRUSEL DE FOTOS DE PORTADA */
+.hero-carousel{
+  min-height:340px;
+  height:100%;
+  position:relative;
+  overflow:hidden;
+  border-radius:25px;
+  background:#145c3b;
+  box-shadow:0 12px 30px rgba(0,0,0,.15);
+}
+
+.portada-slide{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  transition:opacity .8s ease;
+  pointer-events:none;
+}
+
+.portada-slide.activa{
+  opacity:1;
+  pointer-events:auto;
+}
+
+.portada-slide img{
+  width:100%;
+  height:100%;
+  min-height:340px;
+  object-fit:cover;
+  display:block;
+}
+
+.portada-overlay{
+  position:absolute;
+  inset:0;
+  background:linear-gradient(transparent 45%,rgba(0,0,0,.75));
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:28px;
+  color:white;
+}
+
+.portada-overlay strong{
+  font-size:25px;
+}
+
+.portada-overlay span{
+  font-size:13px;
+}
+
+.portada-flecha{
+  position:absolute;
+  z-index:3;
+  top:50%;
+  transform:translateY(-50%);
+  width:42px;
+  height:42px;
+  border:0;
+  border-radius:50%;
+  background:#ffffffdd;
+  color:#145c3b;
+  font-size:25px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.portada-anterior{left:12px}
+.portada-siguiente{right:12px}
+
+.portada-puntos{
+  position:absolute;
+  z-index:3;
+  bottom:12px;
+  left:0;
+  right:0;
+  display:flex;
+  justify-content:center;
+  gap:8px;
+}
+
+.portada-punto{
+  width:10px;
+  height:10px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background:#ffffff99;
+  cursor:pointer;
+}
+
+.portada-punto.activo{
+  background:white;
+  transform:scale(1.25);
+}
+
+@media(max-width:800px){
+  .hero-carousel{min-height:280px}
+  .portada-slide img{min-height:280px}
+}
+
 </style>
 </head>
 <body>
@@ -169,8 +272,21 @@ html[data-tema="oscuro"] #botonTema{
 <a class="button" href="#actividades">Ver actividades ↓</a>
 <a class="button secondary" href="#contacto">Información para familias</a>
 </div>
-<div class="hero-art">
-<div><strong>Pasión por compartir.</strong><span>Club Social Casilda · Desde el corazón del club</span></div>
+<div class="hero-carousel" id="carruselPortada">
+  <div id="portadaSlides">
+    <div class="portada-slide activa">
+      <div class="portada-overlay">
+        <strong>Pasión por compartir.</strong>
+        <span>Club Social Casilda · Desde el corazón del club</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="portada-flecha portada-anterior" id="portadaAnterior" type="button" aria-label="Foto anterior">‹</button>
+  <button class="portada-flecha portada-siguiente" id="portadaSiguiente" type="button" aria-label="Foto siguiente">›</button>
+
+  <div class="portada-puntos" id="portadaPuntos"></div>
+</div>
 </div>
 </div>
 </section>
@@ -586,13 +702,120 @@ categorias.style="font-size:14px;color:#65766a;line-height:1.7;margin:16px 0 0;f
   contenedor.appendChild(tarjeta);
  });
 }
+/* CARRUSEL DE FOTOS DE PORTADA */
 
+let indicePortada = 0;
+let temporizadorPortada = null;
+
+async function cargarCarruselPortada(){
+
+  const contenedor = document.getElementById("portadaSlides");
+  const puntos = document.getElementById("portadaPuntos");
+
+  const {data,error} = await db
+    .from("portada_fotos")
+    .select("id,imagen_url,orden")
+    .eq("activo",true)
+    .order("orden",{ascending:true});
+
+  if(error){
+    console.error("Error al cargar fotos de portada:",error);
+    return;
+  }
+
+  if(!data || data.length === 0) return;
+
+  contenedor.innerHTML = "";
+  puntos.innerHTML = "";
+
+  data.forEach((foto,i)=>{
+
+    const slide = document.createElement("div");
+    slide.className = "portada-slide" + (i === 0 ? " activa" : "");
+
+    const img = document.createElement("img");
+    img.src = foto.imagen_url;
+    img.alt = "Fotografía del Club Social Casilda";
+    img.loading = i === 0 ? "eager" : "lazy";
+
+    slide.appendChild(img);
+
+    const overlay = document.createElement("div");
+    overlay.className = "portada-overlay";
+
+    const titulo = document.createElement("strong");
+    titulo.textContent = "Club Social Casilda";
+
+    const subtitulo = document.createElement("span");
+    subtitulo.textContent = "Escuelita de Fútbol · Deporte, familia y comunidad";
+
+    overlay.append(titulo,subtitulo);
+    slide.appendChild(overlay);
+    contenedor.appendChild(slide);
+
+    const punto = document.createElement("button");
+    punto.type = "button";
+    punto.className = "portada-punto" + (i === 0 ? " activo" : "");
+    punto.setAttribute("aria-label","Mostrar foto " + (i+1));
+    punto.addEventListener("click",()=>mostrarFotoPortada(i));
+
+    puntos.appendChild(punto);
+  });
+
+  indicePortada = 0;
+
+  document.getElementById("portadaAnterior").style.display = data.length > 1 ? "flex" : "none";
+  document.getElementById("portadaSiguiente").style.display = data.length > 1 ? "flex" : "none";
+  puntos.style.display = data.length > 1 ? "flex" : "none";
+
+  if(temporizadorPortada) clearInterval(temporizadorPortada);
+
+  if(data.length > 1){
+    temporizadorPortada = setInterval(()=>{
+      mostrarFotoPortada(indicePortada + 1);
+    },5000);
+  }
+}
+
+function mostrarFotoPortada(indice){
+
+  const slides = document.querySelectorAll("#portadaSlides .portada-slide");
+  const puntos = document.querySelectorAll("#portadaPuntos .portada-punto");
+
+  if(!slides.length) return;
+
+  indicePortada = (indice + slides.length) % slides.length;
+
+  slides.forEach((slide,i)=>{
+    slide.classList.toggle("activa",i === indicePortada);
+  });
+
+  puntos.forEach((punto,i)=>{
+    punto.classList.toggle("activo",i === indicePortada);
+  });
+
+  if(temporizadorPortada){
+    clearInterval(temporizadorPortada);
+    temporizadorPortada = setInterval(()=>{
+      mostrarFotoPortada(indicePortada + 1);
+    },5000);
+  }
+}
+
+document.getElementById("portadaAnterior").addEventListener("click",()=>{
+  mostrarFotoPortada(indicePortada - 1);
+});
+
+document.getElementById("portadaSiguiente").addEventListener("click",()=>{
+  mostrarFotoPortada(indicePortada + 1);
+});
 async function iniciarPagina(){
  await Promise.all([
   cargarCategorias(),
   cargarActividades(),
   cargarPartidos(),
-  cargarEquipo()
+  cargarEquipo(),
+  cargarCarruselPortada()
  ]);
 }
 
