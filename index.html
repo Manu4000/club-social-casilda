@@ -405,10 +405,10 @@ async function cargarEquipo(){
   const contenedor=esProfesor?profesores:ayudantes;
 
   const tarjeta=document.createElement("article");
-tarjeta.style="background:white;border-radius:18px;overflow:hidden;box-shadow:0 5px 18px #174d3020;border:1px solid #e1ebe3;transition:transform .2s";
+tarjeta.style="background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 8px 28px rgba(15,65,35,.10);border:1px solid #e4eee6;transition:all .25s";
 
   const marco=document.createElement("div");
-  marco.style="height:230px;background:#e2eee5;display:flex;align-items:center;justify-content:center;overflow:hidden";
+marco.style="height:270px;background:linear-gradient(135deg,#e8f2eb,#d6e8dc);display:flex;align-items:center;justify-content:center;overflow:hidden";
 
   if(persona.imagen_url){
    const foto=document.createElement("img");
@@ -422,19 +422,19 @@ tarjeta.style="background:white;border-radius:18px;overflow:hidden;box-shadow:0 
   }
 
   const datos=document.createElement("div");
-  datos.style="padding:22px;text-align:center";
+datos.style="padding:26px 22px 28px;text-align:center;min-height:155px";
 
   const nombre=document.createElement("h3");
   nombre.textContent=persona.nombre;
-  nombre.style="font-size:21px;margin:0 0 9px;color:#183b29";
+  nombre.style="font-size:23px;font-weight:800;margin:0 0 12px;color:#12452b;letter-spacing:-.4px";
 
   const funcion=document.createElement("strong");
-  funcion.style="display:inline-block;background:#e5f2e8;color:#176b3a;padding:6px 16px;border-radius:20px;font-size:13px";
+  funcion.style="display:inline-block;background:#e7f3e9;color:#08743e;padding:8px 18px;border-radius:30px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.7px";
   funcion.textContent=persona.funcion;
 
   const categorias=document.createElement("p");
   categorias.textContent="Categorías: "+persona.categorias;
-categorias.style="font-size:13px;color:#647568;line-height:1.6;margin:14px 0 0";
+categorias.style="font-size:14px;color:#65766a;line-height:1.7;margin:16px 0 0;font-weight:500";
 
   datos.append(nombre,funcion,categorias);
   tarjeta.append(marco,datos);
