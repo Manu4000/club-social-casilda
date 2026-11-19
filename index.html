@@ -131,6 +131,7 @@ section{padding:45px 0}
 </div>
 </section>
  
+
 <section id="equipo" style="padding:65px 20px;background:#f2f7f3">
   <div class="wrap">
     <div class="section-head">
@@ -140,78 +141,17 @@ section{padding:45px 0}
     </div>
 
     <h3 style="color:#176b3a;margin:30px 0 18px">Profesores</h3>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px">
-
-      <article style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 3px 12px #00000012">
-        <div style="height:220px;background:#e2eee5;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#176b3a">
-          <span style="font-size:45px">📷</span>
-          <strong>Agregar foto de Manuel</strong>
-        </div>
-        <div style="padding:20px">
-          <h3>Manuel Torres</h3>
-          <strong style="color:#176b3a">Profesor</strong>
-          <p>Categorías 2021/22, 2020, 2019, 2012, 2013, 2014 y 2015.</p>
-        </div>
-      </article>
-
-      <article style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 3px 12px #00000012">
-        <div style="height:220px;background:#e2eee5;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#176b3a">
-          <span style="font-size:45px">📷</span>
-          <strong>Agregar foto de Ramón</strong>
-        </div>
-        <div style="padding:20px">
-          <h3>Ramón Aciarini</h3>
-          <strong style="color:#176b3a">Profesor</strong>
-          <p>Categorías 2016, 2017 y 2018.</p>
-        </div>
-      </article>
-
+    <div id="equipoProfesores" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px">
+      <p>Cargando profesores...</p>
     </div>
 
     <h3 style="color:#176b3a;margin:40px 0 18px">Ayudantes</h3>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:22px">
-
-      <article style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 3px 12px #00000012">
-        <div style="height:190px;background:#e2eee5;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#176b3a">
-          <span style="font-size:40px">📷</span>
-          <strong>Agregar foto</strong>
-        </div>
-        <div style="padding:18px">
-          <h3>Francisco Moya</h3>
-          <strong style="color:#176b3a">Ayudante</strong>
-          <p>Categorías 2019 y 2020.</p>
-        </div>
-      </article>
-
-      <article style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 3px 12px #00000012">
-        <div style="height:190px;background:#e2eee5;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#176b3a">
-          <span style="font-size:40px">📷</span>
-          <strong>Agregar foto</strong>
-        </div>
-        <div style="padding:18px">
-          <h3>Lautaro Mujica</h3>
-          <strong style="color:#176b3a">Ayudante</strong>
-          <p>Categorías 2021/22, 2016, 2017 y 2018.</p>
-        </div>
-      </article>
-
-      <article style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 3px 12px #00000012">
-        <div style="height:190px;background:#e2eee5;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#176b3a">
-          <span style="font-size:40px">📷</span>
-          <strong>Agregar foto</strong>
-        </div>
-        <div style="padding:18px">
-          <h3>Matías Molina</h3>
-          <strong style="color:#176b3a">Ayudante</strong>
-          <p>Categorías 2021/22, 2016, 2017 y 2018.</p>
-        </div>
-      </article>
-
+    <div id="equipoAyudantes" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:22px">
+      <p>Cargando ayudantes...</p>
     </div>
   </div>
 </section>
+
 
 <section id="publicaciones" style="padding-top:0">
 <div class="wrap">
@@ -435,11 +375,77 @@ async function cargarPartidos(){
  });
 }
 
+async function cargarEquipo(){
+ const profesores=document.getElementById("equipoProfesores");
+ const ayudantes=document.getElementById("equipoAyudantes");
+
+ const {data,error}=await db
+  .from("equipo_trabajo")
+  .select("nombre,funcion,categorias,imagen_url,orden")
+  .eq("activo",true)
+  .order("orden",{ascending:true});
+
+ if(error){
+  profesores.innerHTML="<p>No pudimos cargar el equipo.</p>";
+  ayudantes.innerHTML="";
+  console.error(error);
+  return;
+ }
+
+ profesores.innerHTML="";
+ ayudantes.innerHTML="";
+
+ if(!data||data.length===0){
+  profesores.innerHTML="<p>Próximamente presentaremos nuestro equipo.</p>";
+  return;
+ }
+
+ data.forEach(persona=>{
+  const esProfesor=persona.funcion.toLowerCase().includes("profesor");
+  const contenedor=esProfesor?profesores:ayudantes;
+
+  const tarjeta=document.createElement("article");
+  tarjeta.style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 3px 12px #00000012";
+
+  const marco=document.createElement("div");
+  marco.style="height:220px;background:#e2eee5;display:flex;align-items:center;justify-content:center;overflow:hidden";
+
+  if(persona.imagen_url){
+   const foto=document.createElement("img");
+   foto.src=persona.imagen_url;
+   foto.alt="Fotografía de "+persona.nombre;
+   foto.style="width:100%;height:100%;object-fit:cover";
+   foto.onerror=()=>{marco.innerHTML="📷";};
+   marco.appendChild(foto);
+  }else{
+   marco.innerHTML="<span style='font-size:45px;color:#176b3a'>📷</span>";
+  }
+
+  const datos=document.createElement("div");
+  datos.style="padding:20px";
+
+  const nombre=document.createElement("h3");
+  nombre.textContent=persona.nombre;
+
+  const funcion=document.createElement("strong");
+  funcion.style="color:#176b3a";
+  funcion.textContent=persona.funcion;
+
+  const categorias=document.createElement("p");
+  categorias.textContent="Categorías "+persona.categorias+".";
+
+  datos.append(nombre,funcion,categorias);
+  tarjeta.append(marco,datos);
+  contenedor.appendChild(tarjeta);
+ });
+}
+
 async function iniciarPagina(){
  await Promise.all([
   cargarCategorias(),
   cargarActividades(),
-  cargarPartidos()
+  cargarPartidos(),
+  cargarEquipo()
  ]);
 }
 
