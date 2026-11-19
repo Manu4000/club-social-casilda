@@ -74,13 +74,20 @@ const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const parametros = new URLSearchParams(window.location.search);
 const nombreCategoria = parametros.get("cat");
 
+function escapar(valor){
+  return String(valor ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",
+    '"':"&quot;","'":"&#39;"
+  })[c]);
+}
+
 async function iniciar(){
   if(!nombreCategoria){
     document.getElementById("titulo").textContent="No se indicó una categoría";
     return;
   }
 
-  const {data: categoria,error} = await db
+  const {data:categoria,error} = await db
     .from("categorias")
     .select("*")
     .eq("nombre",nombreCategoria)
@@ -103,7 +110,8 @@ async function iniciar(){
     foto.classList.remove("oculto");
   }
 
-  const {data:fotos} = await db
+  // FOTOGRAFÍAS
+  const {data:fotos,error:errorFotos} = await db
     .from("fotos_categorias")
     .select("*")
     .eq("categoria_id",categoria.id)
@@ -112,7 +120,9 @@ async function iniciar(){
   const galeria=document.getElementById("galeria");
   galeria.innerHTML="";
 
-  if(fotos && fotos.length){
+  if(errorFotos){
+    galeria.textContent="No se pudieron cargar las fotografías.";
+  }else if(fotos && fotos.length){
     fotos.forEach(f=>{
       const img=document.createElement("img");
       img.src=f.imagen_url;
@@ -123,31 +133,52 @@ async function iniciar(){
     galeria.textContent="Próximamente compartiremos fotografías.";
   }
 
-  const {data:actividades} = await db
+  // NOVEDADES: PROPIAS DE LA CATEGORÍA Y GENERALES
+  const {data:actividades,error:errorActividades} = await db
     .from("actividades")
     .select("*")
     .eq("publicado",true)
+    .or(`categoria_id.eq.${categoria.id},categoria_id.is.null`)
     .order("fecha",{ascending:true});
 
   const novedades=document.getElementById("novedades");
   novedades.innerHTML="";
-  const propias=(actividades || []).filter(a =>
-    a.categoria === categoria.nombre
-  );
 
-  if(propias.length){
-    propias.forEach(a=>{
+  if(errorActividades){
+    novedades.textContent="No se pudieron cargar las novedades.";
+  }else if(actividades && actividades.length){
+    actividades.forEach(a=>{
       const div=document.createElement("div");
       div.className="item";
-      div.innerHTML="<strong>"+escapar(a.titulo)+"</strong><p>"+
-        escapar(a.descripcion || "")+"</p>";
+
+      const titulo=document.createElement("strong");
+      titulo.textContent=a.titulo;
+
+      const descripcion=document.createElement("p");
+      descripcion.textContent=a.descripcion || "";
+
+      const detalle=document.createElement("p");
+      detalle.textContent=[
+        a.fecha || "",
+        a.horario || "",
+        a.lugar || ""
+      ].filter(Boolean).join(" · ");
+
+      div.appendChild(titulo);
+      div.appendChild(descripcion);
+
+      if(detalle.textContent){
+        div.appendChild(detalle);
+      }
+
       novedades.appendChild(div);
     });
   }else{
     novedades.textContent="Próximamente compartiremos novedades.";
   }
 
-  const {data:partidos} = await db
+  // PARTIDOS
+  const {data:partidos,error:errorPartidos} = await db
     .from("partidos")
     .select("*, club_local:clubes!partidos_club_local_id_fkey(nombre), club_visitante:clubes!partidos_club_visitante_id_fkey(nombre), canchas(nombre)")
     .eq("categoria",categoria.nombre)
@@ -156,15 +187,28 @@ async function iniciar(){
   const contenedor=document.getElementById("partidos");
   contenedor.innerHTML="";
 
-  if(partidos && partidos.length){
+  if(errorPartidos){
+    contenedor.textContent="No se pudieron cargar los partidos.";
+  }else if(partidos && partidos.length){
     partidos.forEach(p=>{
       const div=document.createElement("div");
       div.className="item";
-      div.innerHTML="<strong>"+escapar(p.club_local?.nombre || "Local")+
-        " vs "+escapar(p.club_visitante?.nombre || "Visitante")+
-        "</strong><p>"+escapar(p.fecha || "Fecha a confirmar")+
-        " · "+escapar(p.horario || "Horario a confirmar")+
-        " · "+escapar(p.canchas?.nombre || "Cancha a confirmar")+"</p>";
+
+      const titulo=document.createElement("strong");
+      titulo.textContent=
+        (p.club_local?.nombre || "Local")+
+        " vs "+
+        (p.club_visitante?.nombre || "Visitante");
+
+      const detalle=document.createElement("p");
+      detalle.textContent=[
+        p.fecha || "Fecha a confirmar",
+        p.horario || "Horario a confirmar",
+        p.canchas?.nombre || "Cancha a confirmar"
+      ].join(" · ");
+
+      div.appendChild(titulo);
+      div.appendChild(detalle);
       contenedor.appendChild(div);
     });
   }else{
@@ -172,15 +216,7 @@ async function iniciar(){
   }
 }
 
-function escapar(valor){
-  return String(valor).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",
-    '"':"&quot;","'":"&#39;"
-  })[c]);
-}
-
 iniciar();
 </script>
 </body>
 </html>
-
