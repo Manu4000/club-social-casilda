@@ -14,10 +14,13 @@ section{background:white;padding:20px;border-radius:12px;margin-bottom:18px;box-
 input,select,textarea,button{box-sizing:border-box;width:100%;padding:12px;margin:7px 0;border:1px solid #ccc;border-radius:7px;font-size:15px}
 button{background:#12633e;color:white;border:0;font-weight:bold;cursor:pointer}
 button.secondary{background:#68776e}
+button.edit{background:#286b9b}
 .item{border-bottom:1px solid #ddd;padding:12px 0}
+.item button{width:auto;padding:9px 14px;margin-right:5px}
 .hidden{display:none}
 h2{margin-top:0}
 #mensaje{padding:10px;border-radius:7px}
+small{color:#68776e}
 </style>
 </head>
 <body>
@@ -39,6 +42,21 @@ h2{margin-top:0}
 <h2>Administración</h2>
 <p>Desde acá podés cargar y administrar la información del club.</p>
 <button class="secondary" onclick="salir()">Cerrar sesión</button>
+</section>
+
+<section>
+<h2>📂 Administrar categorías</h2>
+<p>Creá y modificá las categorías de la Escuelita. Cada una tendrá su propio espacio en la web.</p>
+
+<input id="nombreCategoria" placeholder="Nombre (ej. 2021/22)">
+<textarea id="descripcionCategoria" placeholder="Descripción de la categoría"></textarea>
+<input id="horariosCategoria" placeholder="Días y horarios de entrenamiento">
+<input id="imagenCategoria" placeholder="URL de la foto del equipo (opcional)">
+
+<button id="guardarCategoria" onclick="crearCategoria()">Agregar categoría</button>
+<button id="cancelarEdicion" class="secondary hidden" onclick="cancelarEdicion()">Cancelar edición</button>
+
+<div id="categorias"></div>
 </section>
 
 <section>
@@ -79,7 +97,7 @@ h2{margin-top:0}
 <label>Actividad o encuentro</label>
 <select id="partidoActividad"></select>
 <label>Categoría</label>
-<input id="partidoCategoria" placeholder="Ej. 2015">
+<select id="partidoCategoria"></select>
 <label>Club local</label>
 <select id="clubLocal"></select>
 <label>Club visitante</label>
@@ -103,14 +121,21 @@ const CLAVE_PUBLICA = "sb_publishable_7LrSBH4iHJvnxsJLdZt_AA_-0hEOx-3";
 const ADMIN_ID = "d3f17178-362b-4c29-b2ab-4ee5b5ada1f6";
 const db = window.supabase.createClient(URL_SUPABASE, CLAVE_PUBLICA);
 
+let categoriasActuales = [];
+let categoriaEditando = null;
+
 function mensaje(texto){
  document.getElementById("mensaje").textContent=texto;
 }
+
 async function ingresar(){
  const email=document.getElementById("email").value.trim();
  const password=document.getElementById("password").value;
  const {data,error}=await db.auth.signInWithPassword({email,password});
- if(error){document.getElementById("errorLogin").textContent=error.message;return;}
+ if(error){
+  document.getElementById("errorLogin").textContent=error.message;
+  return;
+ }
  if(data.user.id!==ADMIN_ID){
   await db.auth.signOut();
   document.getElementById("errorLogin").textContent="No tenés autorización para administrar.";
@@ -118,6 +143,7 @@ async function ingresar(){
  }
  mostrarPanel();
 }
+
 async function verificarSesion(){
  const {data}=await db.auth.getSession();
  if(data.session){
@@ -125,15 +151,145 @@ async function verificarSesion(){
   else await db.auth.signOut();
  }
 }
+
 function mostrarPanel(){
  document.getElementById("login").classList.add("hidden");
  document.getElementById("panel").classList.remove("hidden");
  cargarTodo();
 }
+
 async function salir(){
  await db.auth.signOut();
  location.reload();
 }
+
+// CATEGORÍAS
+
+async function crearCategoria(){
+ const nombre=document.getElementById("nombreCategoria").value.trim();
+ const descripcion=document.getElementById("descripcionCategoria").value.trim();
+ const dias_horarios=document.getElementById("horariosCategoria").value.trim();
+ const imagen_url=document.getElementById("imagenCategoria").value.trim();
+
+ if(!nombre){
+  mensaje("Escribí el nombre de la categoría.");
+  return;
+ }
+
+ const {error}=await db.from("categorias").insert({
+  nombre,descripcion,dias_horarios,imagen_url:imagen_url||null
+ });
+
+ if(error){
+  mensaje("Error: "+error.message);
+  return;
+ }
+
+ cancelarEdicion();
+ mensaje("Categoría creada correctamente.");
+ cargarTodo();
+}
+
+function editarCategoria(id){
+ const c=categoriasActuales.find(x=>x.id===id);
+ if(!c)return;
+
+ categoriaEditando=id;
+ document.getElementById("nombreCategoria").value=c.nombre||"";
+ document.getElementById("descripcionCategoria").value=c.descripcion||"";
+ document.getElementById("horariosCategoria").value=c.dias_horarios||"";
+ document.getElementById("imagenCategoria").value=c.imagen_url||"";
+
+ document.getElementById("guardarCategoria").textContent="Guardar cambios";
+ document.getElementById("guardarCategoria").onclick=guardarEdicionCategoria;
+ document.getElementById("cancelarEdicion").classList.remove("hidden");
+
+ document.getElementById("nombreCategoria").scrollIntoView({behavior:"smooth"});
+}
+
+async function guardarEdicionCategoria(){
+ const nombre=document.getElementById("nombreCategoria").value.trim();
+ const descripcion=document.getElementById("descripcionCategoria").value.trim();
+ const dias_horarios=document.getElementById("horariosCategoria").value.trim();
+ const imagen_url=document.getElementById("imagenCategoria").value.trim();
+
+ if(!nombre){
+  mensaje("Escribí el nombre de la categoría.");
+  return;
+ }
+
+ const {error}=await db.from("categorias").update({
+  nombre,descripcion,dias_horarios,imagen_url:imagen_url||null
+ }).eq("id",categoriaEditando);
+
+ if(error){
+  mensaje("Error: "+error.message);
+  return;
+ }
+
+ cancelarEdicion();
+ mensaje("Categoría actualizada correctamente.");
+ cargarTodo();
+}
+
+function cancelarEdicion(){
+ categoriaEditando=null;
+ document.getElementById("nombreCategoria").value="";
+ document.getElementById("descripcionCategoria").value="";
+ document.getElementById("horariosCategoria").value="";
+ document.getElementById("imagenCategoria").value="";
+ document.getElementById("guardarCategoria").textContent="Agregar categoría";
+ document.getElementById("guardarCategoria").onclick=crearCategoria;
+ document.getElementById("cancelarEdicion").classList.add("hidden");
+}
+
+function mostrarCategorias(filas){
+ categoriasActuales=filas;
+ const cont=document.getElementById("categorias");
+ cont.innerHTML="";
+
+ if(filas.length===0){
+  cont.textContent="Todavía no hay categorías.";
+  return;
+ }
+
+ filas.forEach(c=>{
+  const div=document.createElement("div");
+  div.className="item";
+
+  const nombre=document.createElement("strong");
+  nombre.textContent=c.nombre;
+  div.appendChild(nombre);
+
+  if(c.descripcion){
+   const desc=document.createElement("p");
+   desc.textContent=c.descripcion;
+   div.appendChild(desc);
+  }
+
+  if(c.dias_horarios){
+   const dias=document.createElement("p");
+   dias.textContent="📅 "+c.dias_horarios;
+   div.appendChild(dias);
+  }
+
+  const editar=document.createElement("button");
+  editar.className="edit";
+  editar.textContent="Editar";
+  editar.onclick=()=>editarCategoria(c.id);
+
+  const borrar=document.createElement("button");
+  borrar.className="secondary";
+  borrar.textContent="Eliminar";
+  borrar.onclick=()=>eliminar("categorias",c.id);
+
+  div.append(editar,borrar);
+  cont.appendChild(div);
+ });
+}
+
+// ACTIVIDADES
+
 async function crearActividad(){
  const fila={
   titulo:document.getElementById("titulo").value.trim(),
@@ -151,6 +307,9 @@ async function crearActividad(){
  mensaje("Actividad publicada correctamente.");
  cargarTodo();
 }
+
+// CLUBES
+
 async function crearClub(){
  const nombre=document.getElementById("nombreClub").value.trim();
  if(!nombre){mensaje("Escribí el nombre del club.");return;}
@@ -163,6 +322,9 @@ async function crearClub(){
  mensaje("Club agregado.");
  cargarTodo();
 }
+
+// CANCHAS
+
 async function crearCancha(){
  const nombre=document.getElementById("nombreCancha").value.trim();
  if(!nombre){mensaje("Escribí el nombre de la cancha.");return;}
@@ -175,33 +337,53 @@ async function crearCancha(){
  mensaje("Cancha agregada.");
  cargarTodo();
 }
+
+// PARTIDOS
+
 async function crearPartido(){
  const fila={
   actividad_id:document.getElementById("partidoActividad").value||null,
-  categoria:document.getElementById("partidoCategoria").value.trim(),
+  categoria:document.getElementById("partidoCategoria").value||null,
   club_local_id:document.getElementById("clubLocal").value||null,
   club_visitante_id:document.getElementById("clubVisitante").value||null,
   fecha:document.getElementById("partidoFecha").value||null,
   horario:document.getElementById("partidoHorario").value.trim(),
   cancha_id:document.getElementById("partidoCancha").value||null
  };
- if(!fila.club_local_id||!fila.club_visitante_id){mensaje("Seleccioná los dos clubes.");return;}
- if(fila.club_local_id===fila.club_visitante_id){mensaje("Elegí dos clubes diferentes.");return;}
+
+ if(!fila.categoria){mensaje("Seleccioná una categoría.");return;}
+ if(!fila.club_local_id||!fila.club_visitante_id){
+  mensaje("Seleccioná los dos clubes.");
+  return;
+ }
+ if(fila.club_local_id===fila.club_visitante_id){
+  mensaje("Elegí dos clubes diferentes.");
+  return;
+ }
+
  const {error}=await db.from("partidos").insert(fila);
  if(error){mensaje("Error: "+error.message);return;}
  mensaje("Partido guardado.");
+ document.getElementById("partidoFecha").value="";
+ document.getElementById("partidoHorario").value="";
  cargarTodo();
 }
+
+// LISTAS Y OPCIONES
+
 function agregarOpciones(id,filas,etiqueta){
  const select=document.getElementById(id);
  const anterior=select.value;
  select.innerHTML='<option value="">Seleccionar</option>';
  filas.forEach(f=>{
   const op=document.createElement("option");
-  op.value=f.id;op.textContent=etiqueta(f);select.appendChild(op);
+  op.value=f.id;
+  op.textContent=etiqueta(f);
+  select.appendChild(op);
  });
  if(filas.some(f=>String(f.id)===anterior))select.value=anterior;
 }
+
 function mostrarLista(id,filas,etiqueta,tabla){
  const cont=document.getElementById(id);
  cont.innerHTML="";
@@ -218,6 +400,7 @@ function mostrarLista(id,filas,etiqueta,tabla){
   cont.appendChild(div);
  });
 }
+
 async function eliminar(tabla,id){
  if(!confirm("¿Seguro que querés eliminar este elemento?"))return;
  const {error}=await db.from(tabla).delete().eq("id",id);
@@ -225,27 +408,49 @@ async function eliminar(tabla,id){
  mensaje("Elemento eliminado.");
  cargarTodo();
 }
+
 async function cargarTodo(){
- const [a,c,k,p]=await Promise.all([
+ const [a,c,k,p,cat]=await Promise.all([
   db.from("actividades").select("*").order("id",{ascending:false}),
   db.from("clubes").select("*").order("nombre"),
   db.from("canchas").select("*").order("nombre"),
-  db.from("partidos").select("*").order("fecha")
+  db.from("partidos").select("*").order("fecha"),
+  db.from("categorias").select("*").order("nombre")
  ]);
- for(const r of [a,c,k,p]){
-  if(r.error){mensaje("Error al cargar datos: "+r.error.message);return;}
+
+ for(const r of [a,c,k,p,cat]){
+  if(r.error){
+   mensaje("Error al cargar datos: "+r.error.message);
+   return;
+  }
  }
+
  mostrarLista("actividades",a.data,x=>x.titulo+" — "+x.categoria,"actividades");
  mostrarLista("clubes",c.data,x=>x.nombre,"clubes");
  mostrarLista("canchas",k.data,x=>x.nombre,"canchas");
  mostrarLista("partidos",p.data,x=>"Partido "+(x.categoria||"")+" — "+(x.fecha||"Sin fecha"),"partidos");
+
+ mostrarCategorias(cat.data);
+
  agregarOpciones("partidoActividad",a.data,x=>x.titulo);
+
+ const selector=document.getElementById("partidoCategoria");
+ const categoriaAnterior=selector.value;
+ selector.innerHTML='<option value="">Seleccionar categoría</option>';
+ cat.data.forEach(c=>{
+  const op=document.createElement("option");
+  op.value=c.nombre;
+  op.textContent=c.nombre;
+  selector.appendChild(op);
+ });
+ if(cat.data.some(c=>c.nombre===categoriaAnterior))selector.value=categoriaAnterior;
+
  agregarOpciones("clubLocal",c.data,x=>x.nombre);
  agregarOpciones("clubVisitante",c.data,x=>x.nombre);
  agregarOpciones("partidoCancha",k.data,x=>x.nombre);
 }
+
 verificarSesion();
 </script>
 </body>
 </html>
-
