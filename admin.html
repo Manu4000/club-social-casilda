@@ -188,6 +188,29 @@ button.danger{background:#b52b2b}
 <div id="galeriaAdmin"></div>
 </section>
 
+<section>
+  <h2>🖼️ Fotos de portada</h2>
+  <p>Administrá las fotografías que aparecerán en la portada principal de la página del club.</p>
+
+  <label>Elegir fotografía</label>
+  <input type="file" id="archivoPortada" accept="image/*">
+
+  <p class="small">Formatos de imagen habituales. Tamaño máximo: 10 MB.</p>
+
+  <button type="button" onclick="subirFotoPortada()">
+    📤 Subir foto a la portada
+  </button>
+
+  <hr style="margin:25px 0;border:0;border-top:1px solid #ddd">
+
+  <h3>Fotos cargadas</h3>
+  <p class="small">Podrás cambiar el orden de aparición o eliminar las fotografías.</p>
+
+  <div id="listaFotosPortada">
+    <p>Las fotografías aparecerán acá.</p>
+  </div>
+</section>
+
 </div>
 </main>
 
@@ -493,6 +516,145 @@ async function subirFotoEquipo(id){
   await cargarEquipo();
 }
 
+/* FOTOS DE PORTADA */
+
+async function subirFotoPortada(){
+  const archivo = document.getElementById("archivoPortada").files[0];
+
+  if(!archivo){
+    avisar("Primero seleccioná una fotografía.");
+    return;
+  }
+
+  if(!archivo.type.startsWith("image/")){
+    avisar("El archivo debe ser una imagen.");
+    return;
+  }
+
+  if(archivo.size > 10 * 1024 * 1024){
+    avisar("La fotografía no puede superar los 10 MB.");
+    return;
+  }
+
+  avisar("Subiendo fotografía...");
+
+  const extension = archivo.name.split(".").pop().toLowerCase();
+  const ruta = Date.now() + "-" + Math.random().toString(36).slice(2) + "." + extension;
+
+  const {error: errorSubida} = await db.storage
+    .from("portada-fotos")
+    .upload(ruta,archivo);
+
+  if(errorSubida){
+    avisar("Error al subir la foto: " + errorSubida.message);
+    return;
+  }
+
+  const {data:urlData} = db.storage
+    .from("portada-fotos")
+    .getPublicUrl(ruta);
+
+  const {data: existentes,error:errorOrden} = await db
+    .from("portada_fotos")
+    .select("orden")
+    .order("orden",{ascending:false})
+    .limit(1);
+
+  if(errorOrden){
+    avisar("La foto se subió, pero hubo un error al consultar el orden: " + errorOrden.message);
+    return;
+  }
+
+  const nuevoOrden = existentes && existentes.length
+    ? (existentes[0].orden || 0) + 1
+    : 1;
+
+  const {error} = await db.from("portada_fotos").insert({
+    imagen_url:urlData.publicUrl,
+    orden:nuevoOrden,
+    activo:true
+  });
+
+  if(error){
+    avisar("La foto se subió, pero no se pudo guardar: " + error.message);
+    return;
+  }
+
+  document.getElementById("archivoPortada").value = "";
+  avisar("¡Foto agregada a la portada!");
+  await cargarFotosPortada();
+}
+
+async function cargarFotosPortada(){
+  const contenedor = document.getElementById("listaFotosPortada");
+
+  const {data,error} = await db
+    .from("portada_fotos")
+    .select("*")
+    .order("orden",{ascending:true});
+
+  if(error){
+    contenedor.innerHTML = "<p>Error: " + escapar(error.message) + "</p>";
+    return;
+  }
+
+  contenedor.innerHTML = (data || []).map(f => `
+    <div class="item">
+      <div>
+        <img class="foto-admin" src="${escapar(f.imagen_url)}" alt="Foto de portada">
+        <p class="small">Orden de aparición: ${f.orden}</p>
+      </div>
+      <button class="danger" onclick="eliminarFotoPortada(${f.id})">
+        🗑️ Eliminar
+      </button>
+    </div>
+  `).join("") || "<p>Todavía no hay fotos de portada.</p>";
+}
+
+async function eliminarFotoPortada(id){
+  if(!confirm("¿Querés eliminar esta foto de portada?")) return;
+
+  const {data:f,error:errorConsulta} = await db
+    .from("portada_fotos")
+    .select("imagen_url")
+    .eq("id",id)
+    .single();
+
+  if(errorConsulta){
+    avisar("No se pudo encontrar la foto: " + errorConsulta.message);
+    return;
+  }
+
+  const marca = "/portada-fotos/";
+  const posicion = f.imagen_url.indexOf(marca);
+
+  if(posicion >= 0){
+    const ruta = f.imagen_url.substring(posicion + marca.length);
+
+    const {error:errorArchivo} = await db.storage
+      .from("portada-fotos")
+      .remove([ruta]);
+
+    if(errorArchivo){
+      avisar("No se pudo eliminar el archivo: " + errorArchivo.message);
+      return;
+    }
+  }
+
+  const {error} = await db
+    .from("portada_fotos")
+    .delete()
+    .eq("id",id);
+
+  if(error){
+    avisar("No se pudo eliminar el registro: " + error.message);
+    return;
+  }
+
+  avisar("Foto eliminada correctamente.");
+  await cargarFotosPortada();
+}
+
 /* CARGA GENERAL */
 
 async function cargarTodo(){
@@ -502,7 +664,8 @@ async function cargarTodo(){
     cargarClubes(),
     cargarCanchas(),
     cargarPartidos(),
-    cargarEquipo()
+    cargarEquipo(),
+    cargarFotosPortada()
   ]);
 
   await cargarFotos();
