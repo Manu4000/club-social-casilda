@@ -74,6 +74,10 @@ button.danger{background:#b52b2b}
 <textarea id="actDescripcion" placeholder="Información de la actividad"></textarea>
 <label>Tipo de actividad</label>
 <input id="actCategoria" placeholder="Ej: Fútbol infantil, Torneo, Comunicado" value="Fútbol infantil">
+  <label>¿A quién va dirigido?</label>
+<select id="actCategoriaId">
+  <option value="">Todas las categorías</option>
+</select>
 <label>Fecha</label>
 <input id="actFecha" type="date">
 <label>Horario</label>
@@ -216,7 +220,8 @@ async function cargarCategorias(){
   document.getElementById("fotoCategoria").innerHTML = '<option value="">Seleccionar categoría</option>'+opciones;
   document.getElementById("partidoCategoria").innerHTML = '<option value="">Seleccionar categoría</option>'+categorias.map(c=>`<option value="${escapar(c.nombre)}">${escapar(c.nombre)}</option>`).join("");
 }
-
+document.getElementById("actCategoriaId").innerHTML =
+  '<option value="">Todas las categorías</option>'+opciones;
 document.getElementById("formCategoria").addEventListener("submit",async e=>{
   e.preventDefault();
   const registro={
