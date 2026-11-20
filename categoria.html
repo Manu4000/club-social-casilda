@@ -259,13 +259,26 @@ titulo.append(
   crearClub(p.club_visitante,"Visitante")
 );
 
-      const detalle=document.createElement("p");
-      detalle.textContent=[
-        p.fecha || "Fecha a confirmar",
-        p.horario || "Horario a confirmar",
-        p.canchas?.nombre || "Cancha a confirmar"
-      ].join(" · ");
+     const detalle=document.createElement("div");
 
+detalle.style="display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;margin-top:18px;font-family:'Inter',sans-serif";
+
+const fecha=p.fecha
+  ? p.fecha.split("-").reverse().join("/")
+  : "A confirmar";
+
+const datos=[
+  ["📅",fecha],
+  ["🕒",p.horario || "Horario a confirmar"],
+  ["📍",p.canchas?.nombre || "Cancha a confirmar"]
+];
+
+datos.forEach(([icono,texto])=>{
+  const etiqueta=document.createElement("span");
+  etiqueta.textContent=icono+" "+texto;
+  etiqueta.style="background:#edf5ef;color:#145c3b;padding:8px 13px;border-radius:20px;font-size:13px;font-weight:700";
+  detalle.appendChild(etiqueta);
+});
       div.appendChild(titulo);
       div.appendChild(detalle);
       contenedor.appendChild(div);
