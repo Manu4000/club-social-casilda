@@ -73,11 +73,24 @@ footer small{color:#a9c0b1}
 .notice,.footer-row{flex-direction:column;align-items:flex-start}
 nav{gap:10px;font-size:12px}
 }
+
 @media(max-width:520px){
   .nav{
+    flex-direction:column;
     flex-wrap:wrap;
-    padding:10px 12px;
+    justify-content:center;
+    align-items:center;
+    padding:12px;
     gap:12px;
+    text-align:center;
+  }
+
+  .brand{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    margin:0 auto;
   }
 
   nav{
@@ -98,6 +111,7 @@ nav{gap:10px;font-size:12px}
   .hero p{font-size:16px}
   section{padding:45px 0}
 }
+
  
 /* BOTÓN DE MODO CLARO Y OSCURO */
 #botonTema{
