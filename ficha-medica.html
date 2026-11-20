@@ -1,1 +1,449 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#145c3b">
+<title>Ficha del Jugador | Club Social Casilda</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f1f5f2;
+  color:#183629;
+}
+header{
+  background:#145c3b;
+  color:white;
+  text-align:center;
+  padding:28px 16px;
+}
+header h1{margin:0 0 8px;font-size:27px}
+header p{margin:0;font-size:15px;opacity:.9}
+.container{
+  max-width:760px;
+  margin:25px auto;
+  padding:0 15px 35px;
+}
+.intro,.section,.notice{
+  background:white;
+  border-radius:14px;
+  padding:22px;
+  margin-bottom:17px;
+  box-shadow:0 3px 12px #0000000b;
+}
+.intro h2{margin:0 0 9px;color:#145c3b}
+.intro p{line-height:1.5;margin:0;color:#52645a}
+.section h3{
+  margin:0 0 18px;
+  color:#145c3b;
+  border-bottom:2px solid #e5eee8;
+  padding-bottom:10px;
+  font-size:19px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+.field{margin-bottom:15px}
+.field.full{grid-column:1/-1}
+label{
+  display:block;
+  font-weight:bold;
+  font-size:14px;
+  margin-bottom:7px;
+}
+input,select,textarea{
+  width:100%;
+  padding:12px;
+  border:1px solid #ccd8d0;
+  border-radius:8px;
+  font-size:15px;
+  font-family:inherit;
+  background:#fff;
+  color:#183629;
+}
+textarea{min-height:85px;resize:vertical}
+input:focus,select:focus,textarea:focus{
+  outline:2px solid #80b99a;
+  border-color:#145c3b;
+}
+.check{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  margin:14px 0;
+  line-height:1.45;
+  font-size:14px;
+}
+.check input{
+  width:18px;
+  height:18px;
+  flex-shrink:0;
+  margin-top:1px;
+}
+.notice{
+  background:#edf5ef;
+  line-height:1.5;
+  font-size:13px;
+  color:#40584a;
+}
+button{
+  width:100%;
+  border:0;
+  border-radius:10px;
+  padding:16px;
+  background:#145c3b;
+  color:white;
+  font-size:17px;
+  font-weight:bold;
+  cursor:pointer;
+}
+button:disabled{opacity:.6;cursor:wait}
+#mensaje{
+  display:none;
+  padding:15px;
+  border-radius:9px;
+  margin-bottom:15px;
+  line-height:1.4;
+}
+footer{text-align:center;color:#718077;font-size:12px;padding:15px}
+@media(max-width:560px){
+  .grid{grid-template-columns:1fr}
+  .field.full{grid-column:auto}
+  header h1{font-size:23px}
+  .section,.intro{padding:18px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Club Social Casilda</h1>
+  <p>Escuelita de Fútbol · Ficha del Jugador</p>
+</header>
+
+<main class="container">
+
+  <div class="intro">
+    <h2>¡Bienvenidos!</h2>
+    <p>
+      Les solicitamos completar esta ficha con los datos del jugador.
+      La información permitirá al cuerpo docente contar con los datos
+      necesarios para acompañar y cuidar a cada niño durante las actividades.
+      Por favor, completen todos los campos obligatorios.
+    </p>
+  </div>
+
+  <div id="mensaje"></div>
+
+  <form id="formulario">
+
+    <section class="section">
+      <h3>⚽ 1. Datos del jugador</h3>
+      <div class="grid">
+
+        <div class="field">
+          <label for="nombre">Nombre *</label>
+          <input id="nombre" required>
+        </div>
+
+        <div class="field">
+          <label for="apellido">Apellido *</label>
+          <input id="apellido" required>
+        </div>
+
+        <div class="field">
+          <label for="fecha_nacimiento">Fecha de nacimiento</label>
+          <input id="fecha_nacimiento" type="date">
+        </div>
+
+        <div class="field">
+          <label for="dni">DNI</label>
+          <input id="dni">
+        </div>
+
+        <div class="field">
+          <label for="domicilio">Domicilio</label>
+          <input id="domicilio">
+        </div>
+
+        <div class="field">
+          <label for="categoria">Categoría</label>
+          <select id="categoria">
+            <option value="">Seleccionar</option>
+            <option>2013</option>
+            <option>2014</option>
+            <option>2015</option>
+            <option>2016</option>
+            <option>2017</option>
+            <option>2018</option>
+            <option>2019</option>
+            <option>2020</option>
+            <option>2021</option>
+            <option>Otra / A confirmar</option>
+          </select>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section">
+      <h3>👨‍👩‍👦 2. Datos del responsable</h3>
+      <div class="grid">
+
+        <div class="field">
+          <label for="responsable_nombre">Nombre y apellido *</label>
+          <input id="responsable_nombre" required>
+        </div>
+
+        <div class="field">
+          <label for="responsable_vinculo">Vínculo con el jugador</label>
+          <select id="responsable_vinculo">
+            <option value="">Seleccionar</option>
+            <option>Madre</option>
+            <option>Padre</option>
+            <option>Tutor/a</option>
+            <option>Otro</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="responsable_telefono">Teléfono principal *</label>
+          <input id="responsable_telefono" type="tel" required>
+        </div>
+
+        <div class="field">
+          <label for="responsable_telefono_alternativo">Teléfono alternativo</label>
+          <input id="responsable_telefono_alternativo" type="tel">
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section">
+      <h3>🚨 3. Contactos de emergencia</h3>
+      <div class="grid">
+
+        <div class="field">
+          <label for="contacto_emergencia_nombre">Nombre y apellido</label>
+          <input id="contacto_emergencia_nombre">
+        </div>
+
+        <div class="field">
+          <label for="contacto_emergencia_telefono">Teléfono</label>
+          <input id="contacto_emergencia_telefono" type="tel">
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section">
+      <h3>🩺 4. Información médica</h3>
+
+      <div class="grid">
+
+        <div class="field">
+          <label for="obra_social">Obra social / Prepaga</label>
+          <input id="obra_social">
+        </div>
+
+        <div class="field">
+          <label for="numero_afiliado">Número de afiliado</label>
+          <input id="numero_afiliado">
+        </div>
+
+        <div class="field">
+          <label for="grupo_sanguineo">Grupo sanguíneo (si lo conoce)</label>
+          <select id="grupo_sanguineo">
+            <option value="">No sabe / No informado</option>
+            <option>O+</option><option>O-</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="alergias">¿Tiene alergias?</label>
+          <textarea id="alergias" placeholder="Indicar cuáles o escribir Ninguna"></textarea>
+        </div>
+
+        <div class="field full">
+          <label for="condiciones_medicas">¿Presenta alguna condición médica o antecedente importante?</label>
+          <textarea id="condiciones_medicas" placeholder="Detallar o escribir Ninguna"></textarea>
+        </div>
+
+        <div class="field full">
+          <label for="medicacion">¿Toma alguna medicación habitualmente?</label>
+          <textarea id="medicacion" placeholder="Indicar cuál, dosis y observaciones relevantes"></textarea>
+        </div>
+
+        <div class="field full">
+          <label for="restricciones_fisicas">¿Tiene alguna restricción para realizar actividad física?</label>
+          <textarea id="restricciones_fisicas" placeholder="Detallar o escribir Ninguna"></textarea>
+        </div>
+
+        <div class="field full">
+          <label for="lesiones_cirugias">Lesiones, operaciones o antecedentes de importancia</label>
+          <textarea id="lesiones_cirugias"></textarea>
+        </div>
+
+        <div class="field full">
+          <label for="observaciones_medicas">Otras observaciones que debamos conocer</label>
+          <textarea id="observaciones_medicas"></textarea>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section">
+      <h3>🚶 5. Personas autorizadas para retirar al jugador</h3>
+      <div class="field">
+        <label for="autorizados_retiro">Nombre, apellido y vínculo de cada persona</label>
+        <textarea id="autorizados_retiro" placeholder="Ejemplo: Juan Pérez - Abuelo&#10;María López - Tía"></textarea>
+      </div>
+    </section>
+
+    <section class="section">
+      <h3>✍️ 6. Autorizaciones y consentimiento</h3>
+
+      <label class="check">
+        <input type="checkbox" id="autorizacion_deportiva" required>
+        <span>Como madre, padre o tutor, autorizo la participación del jugador en las actividades deportivas de la Escuelita de Fútbol del Club Social Casilda. *</span>
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="autorizacion_emergencias" required>
+        <span>Autorizo al personal responsable a contactar a los servicios de emergencia y comunicar la información necesaria ante una situación urgente, procurando informar al responsable a la brevedad. *</span>
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="consentimiento_datos" required>
+        <span>Declaro que los datos proporcionados son correctos y presto mi consentimiento para que el club los utilice exclusivamente con fines organizativos y de cuidado del jugador, con acceso restringido al personal autorizado. *</span>
+      </label>
+
+      <p style="font-size:12px;color:#68786e">
+        * Campos y autorizaciones obligatorios.
+      </p>
+    </section>
+
+    <div class="notice">
+      <strong>Privacidad:</strong> la información de esta ficha contiene datos personales
+      y eventualmente información de salud de menores. Será utilizada exclusivamente
+      para la organización y el cuidado de los jugadores, y deberá ser consultada
+      únicamente por las personas autorizadas por el club.
+    </div>
+
+    <button type="submit" id="enviar">Enviar ficha del jugador</button>
+
+  </form>
+</main>
+
+<footer>
+  Club Social Casilda · Escuelita de Fútbol
+</footer>
+
+<script>
+const SUPABASE_URL = "https://eazpzkjomhojzwresvoa.supabase.co";
+const SUPABASE_KEY = "sb_publishable_7LrSBH4iHJvnxsJLdZt_AA_-0hEOx-3";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const formulario = document.getElementById("formulario");
+const boton = document.getElementById("enviar");
+const mensaje = document.getElementById("mensaje");
+
+function valor(id){
+  return document.getElementById(id).value.trim();
+}
+
+formulario.addEventListener("submit", async function(e){
+  e.preventDefault();
+
+  boton.disabled = true;
+  boton.textContent = "Enviando ficha...";
+
+  mensaje.style.display = "none";
+
+  const autorizados = valor("autorizados_retiro")
+    .split("\n")
+    .map(persona => persona.trim())
+    .filter(persona => persona !== "");
+
+  const ficha = {
+    nombre: valor("nombre"),
+    apellido: valor("apellido"),
+    fecha_nacimiento: valor("fecha_nacimiento") || null,
+    dni: valor("dni"),
+    domicilio: valor("domicilio"),
+    categoria: valor("categoria"),
+
+    responsable_nombre: valor("responsable_nombre"),
+    responsable_vinculo: valor("responsable_vinculo"),
+    responsable_telefono: valor("responsable_telefono"),
+    responsable_telefono_alternativo: valor("responsable_telefono_alternativo"),
+
+    contacto_emergencia_nombre: valor("contacto_emergencia_nombre"),
+    contacto_emergencia_telefono: valor("contacto_emergencia_telefono"),
+
+    obra_social: valor("obra_social"),
+    numero_afiliado: valor("numero_afiliado"),
+    grupo_sanguineo: valor("grupo_sanguineo"),
+    alergias: valor("alergias"),
+    condiciones_medicas: valor("condiciones_medicas"),
+    medicacion: valor("medicacion"),
+    restricciones_fisicas: valor("restricciones_fisicas"),
+    lesiones_cirugias: valor("lesiones_cirugias"),
+    observaciones_medicas: valor("observaciones_medicas"),
+
+    autorizados_retiro: autorizados,
+
+    autorizacion_deportiva: document.getElementById("autorizacion_deportiva").checked,
+    autorizacion_emergencias: document.getElementById("autorizacion_emergencias").checked,
+    consentimiento_datos: document.getElementById("consentimiento_datos").checked
+  };
+
+  try{
+    const { error } = await db
+      .from("fichas_jugadores")
+      .insert([ficha]);
+
+    if(error) throw error;
+
+    formulario.reset();
+
+    mensaje.style.display = "block";
+    mensaje.style.background = "#e5f5e9";
+    mensaje.style.color = "#145c3b";
+    mensaje.textContent = "¡Ficha enviada correctamente! Muchas gracias por completar los datos del jugador.";
+
+    mensaje.scrollIntoView({behavior:"smooth",block:"center"});
+
+  }catch(error){
+    console.error("Error al guardar la ficha:", error);
+
+    mensaje.style.display = "block";
+    mensaje.style.background = "#fdeaea";
+    mensaje.style.color = "#9b2525";
+    mensaje.textContent = "No pudimos enviar la ficha. Por favor, intentá nuevamente. Si el problema continúa, comunicate con el club.";
+
+    mensaje.scrollIntoView({behavior:"smooth",block:"center"});
+
+  }finally{
+    boton.disabled = false;
+    boton.textContent = "Enviar ficha del jugador";
+  }
+});
+</script>
+
+</body>
+</html>
+
