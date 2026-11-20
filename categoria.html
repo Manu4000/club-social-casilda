@@ -178,12 +178,14 @@ async function iniciar(){
     novedades.textContent="Próximamente compartiremos novedades.";
   }
 
+
   // PARTIDOS
   const {data:partidos,error:errorPartidos} = await db
     .from("partidos")
-    .select("*, club_local:clubes!partidos_club_local_id_fkey(nombre), club_visitante:clubes!partidos_club_visitante_id_fkey(nombre), canchas(nombre)")
+    .select("*, club_local:clubes!partidos_club_local_id_fkey(nombre,escudo_url), club_visitante:clubes!partidos_club_visitante_id_fkey(nombre,escudo_url), canchas(nombre)")
     .eq("categoria",categoria.nombre)
     .order("fecha",{ascending:true});
+
 
   const contenedor=document.getElementById("partidos");
   contenedor.innerHTML="";
@@ -195,11 +197,34 @@ async function iniciar(){
       const div=document.createElement("div");
       div.className="item";
 
-      const titulo=document.createElement("strong");
-      titulo.textContent=
-        (p.club_local?.nombre || "Local")+
-        " vs "+
-        (p.club_visitante?.nombre || "Visitante");
+     
+const titulo=document.createElement("div");
+titulo.style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;font-weight:bold;font-size:17px";
+
+function crearClub(club,nombreAlternativo){
+  const equipo=document.createElement("div");
+  equipo.style="display:flex;align-items:center;gap:7px";
+
+  if(club?.escudo_url){
+    const escudo=document.createElement("img");
+    escudo.src=club.escudo_url;
+    escudo.alt="Escudo de "+(club.nombre || nombreAlternativo);
+    escudo.style="width:38px;height:38px;object-fit:contain";
+    equipo.appendChild(escudo);
+  }
+
+  const nombre=document.createElement("span");
+  nombre.textContent=club?.nombre || nombreAlternativo;
+  equipo.appendChild(nombre);
+
+  return equipo;
+}
+
+titulo.append(
+  crearClub(p.club_local,"Local"),
+  document.createTextNode(" vs "),
+  crearClub(p.club_visitante,"Visitante")
+);
 
       const detalle=document.createElement("p");
       detalle.textContent=[
