@@ -191,12 +191,28 @@ async function iniciar(){
       const descripcion=document.createElement("p");
       descripcion.textContent=a.descripcion || "";
 
-      const detalle=document.createElement("p");
-      detalle.textContent=[
-        a.fecha || "",
-        a.horario || "",
-        a.lugar || ""
-      ].filter(Boolean).join(" · ");
+     
+const detalle=document.createElement("div");
+
+detalle.style="display:flex;justify-content:flex-start;align-items:center;flex-wrap:wrap;gap:9px;margin-top:15px;font-family:'Inter',sans-serif";
+
+const fecha=a.fecha
+  ? a.fecha.split("-").reverse().join("/")
+  : "";
+
+const datos=[
+  fecha ? ["📅",fecha] : null,
+  a.horario ? ["🕒",a.horario] : null,
+  a.lugar ? ["📍",a.lugar] : null
+].filter(Boolean);
+
+datos.forEach(([icono,texto])=>{
+  const etiqueta=document.createElement("span");
+  etiqueta.textContent=icono+" "+texto;
+  etiqueta.style="background:#edf5ef;color:#145c3b;padding:8px 13px;border-radius:20px;font-size:13px;font-weight:700";
+  detalle.appendChild(etiqueta);
+});
+
 
       div.appendChild(titulo);
       div.appendChild(descripcion);
