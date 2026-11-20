@@ -6,10 +6,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Escuelita de Fútbol | Club Social</title>
   <link rel="icon" type="image/jpeg" href="/images-2.jpeg">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f2f5f2;color:#222}
+body{margin:0;font-family:'Inter',sans-serif;background:#f2f5f2;color:#222}
 header{background:#08783d;color:white;text-align:center;padding:25px 15px}
 header img{width:85px;height:85px;object-fit:contain}
 header h1{margin:10px 0 5px}
@@ -44,7 +45,10 @@ footer{background:#075d31;color:white;text-align:center;padding:22px}
 <h2 id="titulo">Cargando categoría...</h2>
 <img id="fotoPrincipal" class="oculto" alt="Foto principal de la categoría">
 <p id="descripcion"></p>
-<p><strong>Entrenamientos:</strong> <span id="horarios">A confirmar</span></p>
+<p style="text-align:center;margin-top:25px;font-size:17px">
+<strong>📅 Días y horarios de entrenamiento</strong>
+<span id="horarios" style="display:block;margin-top:8px;font-weight:600;color:#08783d;font-size:19px">A confirmar</span>
+</p>
 </section>
 
 <section class="seccion">
