@@ -433,8 +433,7 @@ formulario.addEventListener("submit", async function(e){
     mensaje.style.display = "block";
     mensaje.style.background = "#fdeaea";
     mensaje.style.color = "#9b2525";
-    mensaje.textContent = "No pudimos enviar la ficha. Por favor, intentá nuevamente. Si el problema continúa, comunicate con el club.";
-
+   mensaje.textContent = "Error: " + error.message;
     mensaje.scrollIntoView({behavior:"smooth",block:"center"});
 
   }finally{
