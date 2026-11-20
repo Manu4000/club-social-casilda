@@ -351,6 +351,7 @@ footer{text-align:center;color:#718077;font-size:12px;padding:15px}
   Club Social Casilda · Escuelita de Fútbol
 </footer>
 
+
 <script>
 const SUPABASE_URL = "https://eazpzkjomhojzwresvoa.supabase.co";
 const SUPABASE_KEY = "sb_publishable_7LrSBH4iHJvnxsJLdZt_AA_-0hEOx-3";
@@ -361,16 +362,15 @@ const formulario = document.getElementById("formulario");
 const boton = document.getElementById("enviar");
 const mensaje = document.getElementById("mensaje");
 
-function valor(id){
+function valor(id) {
   return document.getElementById(id).value.trim();
 }
 
-formulario.addEventListener("submit", async function(e){
+formulario.addEventListener("submit", async function(e) {
   e.preventDefault();
 
   boton.disabled = true;
   boton.textContent = "Enviando ficha...";
-
   mensaje.style.display = "none";
 
   const autorizados = valor("autorizados_retiro")
@@ -379,11 +379,6 @@ formulario.addEventListener("submit", async function(e){
     .filter(persona => persona !== "");
 
   const ficha = {
-    console.log("Autorizaciones:", {
-  deportiva: document.getElementById("autorizacion_deportiva").checked,
-  emergencias: document.getElementById("autorizacion_emergencias").checked,
-  datos: document.getElementById("consentimiento_datos").checked
-});
     nombre: valor("nombre"),
     apellido: valor("apellido"),
     fecha_nacimiento: valor("fecha_nacimiento") || null,
@@ -416,12 +411,12 @@ formulario.addEventListener("submit", async function(e){
     consentimiento_datos: document.getElementById("consentimiento_datos").checked
   };
 
-  try{
+  try {
     const { error } = await db
       .from("fichas_jugadores")
       .insert([ficha]);
 
-    if(error) throw error;
+    if (error) throw error;
 
     formulario.reset();
 
@@ -430,23 +425,25 @@ formulario.addEventListener("submit", async function(e){
     mensaje.style.color = "#145c3b";
     mensaje.textContent = "¡Ficha enviada correctamente! Muchas gracias por completar los datos del jugador.";
 
-    mensaje.scrollIntoView({behavior:"smooth",block:"center"});
+    mensaje.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  }catch(error){
+  } catch (error) {
     console.error("Error al guardar la ficha:", error);
 
     mensaje.style.display = "block";
     mensaje.style.background = "#fdeaea";
     mensaje.style.color = "#9b2525";
-   mensaje.textContent = "Error: " + error.message;
-    mensaje.scrollIntoView({behavior:"smooth",block:"center"});
+    mensaje.textContent = "Error: " + error.message;
 
-  }finally{
+    mensaje.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  } finally {
     boton.disabled = false;
     boton.textContent = "Enviar ficha del jugador";
   }
 });
 </script>
+
 
 </body>
 </html>
