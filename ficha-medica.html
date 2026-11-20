@@ -379,6 +379,11 @@ formulario.addEventListener("submit", async function(e){
     .filter(persona => persona !== "");
 
   const ficha = {
+    console.log("Autorizaciones:", {
+  deportiva: document.getElementById("autorizacion_deportiva").checked,
+  emergencias: document.getElementById("autorizacion_emergencias").checked,
+  datos: document.getElementById("consentimiento_datos").checked
+});
     nombre: valor("nombre"),
     apellido: valor("apellido"),
     fecha_nacimiento: valor("fecha_nacimiento") || null,
