@@ -7,6 +7,25 @@
 <title>Administración | Club Social</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<section>
+  <h2>🩺 Fichas médicas de jugadores</h2>
+  <p>Consultá de manera privada los datos personales, contactos e información médica de cada jugador.</p>
+
+  <input
+    type="search"
+    id="buscarFicha"
+    placeholder="Buscar jugador por nombre o apellido..."
+    oninput="filtrarFichas()"
+  >
+
+  <div id="listaFichas">
+    <p>Las fichas aparecerán acá.</p>
+  </div>
+
+  <div id="detalleFicha" style="display:none;margin-top:20px;padding:18px;background:#f1f5f2;border-radius:10px;">
+  </div>
+</section>
+
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,sans-serif;background:#f1f5f2;margin:0;color:#183b2b}
@@ -677,7 +696,8 @@ async function cargarTodo(){
     cargarCanchas(),
     cargarPartidos(),
     cargarEquipo(),
-    cargarFotosPortada()
+    cargarFotosPortada(),
+    cargarFichas()
   ]);
 
   await cargarFotos();
@@ -1120,6 +1140,140 @@ async function eliminarFoto(id,url){
 
   avisar("Fotografía eliminada.");
   await cargarFotos();
+}
+
+/* FICHAS MÉDICAS */
+
+let fichasJugadores = [];
+
+async function cargarFichas(){
+  const contenedor = document.getElementById("listaFichas");
+
+  contenedor.innerHTML = "<p>Cargando fichas médicas...</p>";
+
+  const {data,error} = await db
+    .from("fichas_jugadores")
+    .select("*")
+    .order("apellido",{ascending:true});
+
+  if(error){
+    contenedor.innerHTML =
+      "<p>No se pudieron cargar las fichas: " +
+      escapar(error.message) + "</p>";
+    return;
+  }
+
+  fichasJugadores = data || [];
+  filtrarFichas();
+}
+
+function filtrarFichas(){
+  const busqueda = document
+    .getElementById("buscarFicha")
+    .value
+    .toLowerCase()
+    .trim();
+
+  const resultados = fichasJugadores.filter(f => {
+    const nombreCompleto = `${f.nombre || ""} ${f.apellido || ""}`.toLowerCase();
+    return nombreCompleto.includes(busqueda) ||
+      String(f.categoria || "").toLowerCase().includes(busqueda);
+  });
+
+  const contenedor = document.getElementById("listaFichas");
+
+  if(resultados.length === 0){
+    contenedor.innerHTML = "<p>No se encontraron fichas.</p>";
+    return;
+  }
+
+  contenedor.innerHTML = resultados.map(f => `
+    <div class="item">
+      <div>
+        <strong>${escapar(f.apellido)}, ${escapar(f.nombre)}</strong><br>
+        <span class="small">
+          Categoría: ${escapar(f.categoria || "Sin especificar")}
+        </span>
+      </div>
+
+      <button type="button" onclick="verFicha(${Number(f.id)})">
+        📋 Ver ficha
+      </button>
+    </div>
+  `).join("");
+}
+
+function verFicha(id){
+  const f = fichasJugadores.find(x => Number(x.id) === Number(id));
+
+  if(!f) return;
+
+  const detalle = document.getElementById("detalleFicha");
+
+  const campo = (titulo,valor) => `
+    <p><strong>${titulo}:</strong> ${escapar(valor || "No informado")}</p>
+  `;
+
+  let autorizados = "No informados";
+
+  if(Array.isArray(f.autorizados_retiro) && f.autorizados_retiro.length){
+    autorizados = f.autorizados_retiro
+      .map(x => typeof x === "object" ? JSON.stringify(x) : x)
+      .join(" · ");
+  }
+
+  detalle.innerHTML = `
+    <h3>👦 Datos del jugador</h3>
+    ${campo("Nombre",f.nombre)}
+    ${campo("Apellido",f.apellido)}
+    ${campo("Fecha de nacimiento",f.fecha_nacimiento)}
+    ${campo("DNI",f.dni)}
+    ${campo("Domicilio",f.domicilio)}
+    ${campo("Categoría",f.categoria)}
+
+    <hr>
+    <h3>👨‍👩‍👦 Responsable</h3>
+    ${campo("Nombre",f.responsable_nombre)}
+    ${campo("Vínculo",f.responsable_vinculo)}
+    ${campo("Teléfono",f.responsable_telefono)}
+    ${campo("Teléfono alternativo",f.responsable_telefono_alternativo)}
+
+    <hr>
+    <h3>🚨 Contacto de emergencia</h3>
+    ${campo("Nombre",f.contacto_emergencia_nombre)}
+    ${campo("Teléfono",f.contacto_emergencia_telefono)}
+
+    <hr>
+    <h3>🩺 Información médica</h3>
+    ${campo("Obra social",f.obra_social)}
+    ${campo("Número de afiliado",f.numero_afiliado)}
+    ${campo("Grupo sanguíneo",f.grupo_sanguineo)}
+    ${campo("Alergias",f.alergias)}
+    ${campo("Condiciones médicas",f.condiciones_medicas)}
+    ${campo("Medicación",f.medicacion)}
+    ${campo("Restricciones físicas",f.restricciones_fisicas)}
+    ${campo("Lesiones o cirugías",f.lesiones_cirugias)}
+    ${campo("Observaciones",f.observaciones_medicas)}
+
+    <hr>
+    <h3>🚶 Personas autorizadas para retirar</h3>
+    ${campo("Autorizados",autorizados)}
+
+    <hr>
+    <h3>✍️ Autorizaciones</h3>
+    ${campo("Participación deportiva",f.autorizacion_deportiva ? "Sí" : "No")}
+    ${campo("Atención de emergencias",f.autorizacion_emergencias ? "Sí" : "No")}
+    ${campo("Consentimiento de datos",f.consentimiento_datos ? "Sí" : "No")}
+
+    <button type="button" onclick="cerrarFicha()">✖ Cerrar ficha</button>
+  `;
+
+  detalle.style.display = "block";
+  detalle.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function cerrarFicha(){
+  document.getElementById("detalleFicha").style.display = "none";
 }
 
 verificarSesion();
