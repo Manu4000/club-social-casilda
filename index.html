@@ -372,6 +372,11 @@ height:480px;
 </style>
 
 <div id="mantenimiento">
+  <script>
+if(new URLSearchParams(window.location.search).get("vista") === "admin"){
+ document.getElementById("mantenimiento").style.display="none";
+}
+</script>
  <div class="mantenimiento-contenido">
 
   <div class="mantenimiento-cancha">⚽</div>
