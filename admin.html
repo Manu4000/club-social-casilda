@@ -909,8 +909,7 @@ document.getElementById("formActividad").addEventListener("submit", async e => {
   boton.textContent = "Publicando...";
 
   try {
-    const archivos = Array.from(
-      document.getElementById("actFotos").files
+  const archivos = fotosSeleccionadas;
     );
 
     // Validar cantidad y tamaño de las imágenes
@@ -983,6 +982,8 @@ document.getElementById("formActividad").addEventListener("submit", async e => {
 
     e.target.reset();
     document.getElementById("actCategoria").value = "Fútbol infantil";
+    fotosSeleccionadas = [];
+document.getElementById("actFotosPreview").innerHTML = "";
 
     avisar("Actividad publicada correctamente.");
     await cargarActividades();
