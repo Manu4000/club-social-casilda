@@ -117,6 +117,11 @@ button.danger{background:#b52b2b}
 </select>
 <label>Fecha</label>
 <input id="actFecha" type="date">
+  <label>📸 Fotos de la actividad</label>
+<input id="actFotos" type="file" accept="image/*" multiple>
+<small style="display:block;color:#666;margin-top:5px;">
+  Podés seleccionar varias fotos para acompañar la publicación.
+</small>
 <label>Horario</label>
 <input id="actHorario" placeholder="Ej: 15:00 hs">
 <label>Lugar</label>
@@ -827,34 +832,99 @@ async function cargarActividades(){
     `).join("") || "<p>Aún no hay actividades.</p>";
 }
 
-document.getElementById("formActividad").addEventListener("submit",async e=>{
+
+document.getElementById("formActividad").addEventListener("submit", async e => {
   e.preventDefault();
 
-  const registro = {
-    titulo:document.getElementById("actTitulo").value,
-    descripcion:document.getElementById("actDescripcion").value,
-    categoria:document.getElementById("actCategoria").value,
-    categoria_id:document.getElementById("actCategoriaId").value
-      ? Number(document.getElementById("actCategoriaId").value)
-      : null,
-    fecha:document.getElementById("actFecha").value || null,
-    horario:document.getElementById("actHorario").value,
-    lugar:document.getElementById("actLugar").value,
-    publicado:true
-  };
+  const boton = e.target.querySelector('button[type="submit"]');
+  boton.disabled = true;
+  boton.textContent = "Publicando...";
 
-  const {error} = await db.from("actividades").insert(registro);
+  try {
+    const archivos = Array.from(
+      document.getElementById("actFotos").files
+    );
 
-  if(error){
-    avisar("No se pudo publicar: " + error.message);
-    return;
+    // Validar cantidad y tamaño de las imágenes
+    if (archivos.length > 20) {
+      avisar("Podés subir un máximo de 20 fotos por actividad.");
+      return;
+    }
+
+    if (archivos.some(f => !f.type.startsWith("image/"))) {
+      avisar("Solo podés seleccionar archivos de imagen.");
+      return;
+    }
+
+    if (archivos.some(f => f.size > 10 * 1024 * 1024)) {
+      avisar("Cada foto debe pesar menos de 10 MB.");
+      return;
+    }
+
+    const registro = {
+      titulo: document.getElementById("actTitulo").value,
+      descripcion: document.getElementById("actDescripcion").value,
+      categoria: document.getElementById("actCategoria").value,
+      categoria_id: document.getElementById("actCategoriaId").value
+        ? Number(document.getElementById("actCategoriaId").value)
+        : null,
+      fecha: document.getElementById("actFecha").value || null,
+      horario: document.getElementById("actHorario").value,
+      lugar: document.getElementById("actLugar").value,
+      publicado: true
+    };
+
+    // Primero guardar la actividad
+    const { data, error } = await db
+      .from("actividades")
+      .insert(registro)
+      .select("id")
+      .single();
+
+    if (error) throw error;
+
+    // Después subir las fotos
+    const fotos = [];
+
+    for (const archivo of archivos) {
+      const nombreSeguro = archivo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const ruta = `${data.id}/${crypto.randomUUID()}-${nombreSeguro}`;
+
+      const { error: errorFoto } = await db.storage
+        .from("actividades-fotos")
+        .upload(ruta, archivo);
+
+      if (errorFoto) throw errorFoto;
+
+      const { data: urlData } = db.storage
+        .from("actividades-fotos")
+        .getPublicUrl(ruta);
+
+      fotos.push(urlData.publicUrl);
+    }
+
+    // Asociar las fotos a la actividad
+    if (fotos.length > 0) {
+      const { error: errorActualizar } = await db
+        .from("actividades")
+        .update({ fotos })
+        .eq("id", data.id);
+
+      if (errorActualizar) throw errorActualizar;
+    }
+
+    e.target.reset();
+    document.getElementById("actCategoria").value = "Fútbol infantil";
+
+    avisar("Actividad publicada correctamente.");
+    await cargarActividades();
+
+  } catch (error) {
+    avisar("No se pudo completar la publicación: " + error.message);
+  } finally {
+    boton.disabled = false;
+    boton.textContent = "Publicar actividad";
   }
-
-  e.target.reset();
-  document.getElementById("actCategoria").value = "Fútbol infantil";
-
-  avisar("Actividad publicada.");
-  await cargarActividades();
 });
 
 /* CLUBES */
