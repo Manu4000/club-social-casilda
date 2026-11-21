@@ -837,32 +837,67 @@ async function cargarActividades(){
       </div>
     `).join("") || "<p>Aún no hay actividades.</p>";
 }
+let fotosSeleccionadas = [];
+
 document.getElementById("actFotos").addEventListener("change", function(){
+
+ const nuevasFotos = Array.from(this.files);
+
+ nuevasFotos.forEach(nueva => {
+  if(!fotosSeleccionadas.some(f =>
+   f.name === nueva.name &&
+   f.size === nueva.size &&
+   f.lastModified === nueva.lastModified
+  )){
+   fotosSeleccionadas.push(nueva);
+  }
+ });
+
+ if(fotosSeleccionadas.length > 20){
+  fotosSeleccionadas = fotosSeleccionadas.slice(0,20);
+  avisar("Podés subir un máximo de 20 fotos.");
+ }
+
+ mostrarFotosSeleccionadas();
+
+ this.value = "";
+});
+
+function mostrarFotosSeleccionadas(){
 
  const preview = document.getElementById("actFotosPreview");
  preview.innerHTML = "";
 
- const archivos = Array.from(this.files);
+ fotosSeleccionadas.forEach((archivo, indice) => {
+  const contenedor = document.createElement("div");
 
- archivos.forEach(archivo => {
-  const lector = document.createElement("img");
-  lector.src = URL.createObjectURL(archivo);
-  lector.style.width = "100%";
-  lector.style.height = "100px";
-  lector.style.objectFit = "cover";
-  lector.style.borderRadius = "10px";
+  const imagen = document.createElement("img");
+  imagen.src = URL.createObjectURL(archivo);
+  imagen.style.width = "100%";
+  imagen.style.height = "100px";
+  imagen.style.objectFit = "cover";
+  imagen.style.borderRadius = "10px";
 
-  preview.appendChild(lector);
+  const eliminar = document.createElement("button");
+  eliminar.type = "button";
+  eliminar.textContent = "✕ Quitar";
+  eliminar.style.width = "100%";
+  eliminar.style.marginTop = "4px";
+  eliminar.onclick = () => {
+   fotosSeleccionadas.splice(indice,1);
+   mostrarFotosSeleccionadas();
+  };
+
+  contenedor.appendChild(imagen);
+  contenedor.appendChild(eliminar);
+  preview.appendChild(contenedor);
  });
 
- if(archivos.length > 0){
-  const contador = document.createElement("p");
-  contador.style.gridColumn = "1 / -1";
-  contador.style.fontSize = "13px";
-  contador.style.color = "#267044";
-  contador.textContent = archivos.length + " fotos seleccionadas";
-  preview.appendChild(contador);
- }
+ const contador = document.createElement("p");
+ contador.style.gridColumn = "1 / -1";
+ contador.textContent = fotosSeleccionadas.length + " fotos seleccionadas";
+ preview.appendChild(contador);
+}
 
 });
 
