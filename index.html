@@ -59,6 +59,25 @@ section{padding:65px 0}
 .card p,.activity-card p{color:var(--muted);margin:5px 0}
 .activity-card h3{margin:5px 0}
 .tag{display:inline-block;background:var(--soft);color:var(--green);padding:5px 10px;border-radius:20px;font-size:12px;font-weight:bold}
+  .galeria-actividad{
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+ gap:12px;
+ margin-top:18px;
+}
+
+.foto-actividad{
+ width:100%;
+ height:170px;
+ object-fit:cover;
+ border-radius:12px;
+ cursor:pointer;
+ transition:transform .2s ease;
+}
+
+.foto-actividad:hover{
+ transform:scale(1.03);
+}
 .activity-empty{background:white;border:1px dashed #b8cbbd;border-radius:18px;padding:28px;text-align:center;color:var(--muted)}
 .activity-empty strong{display:block;color:var(--ink)}
 .notice{background:var(--dark);color:white;border-radius:25px;padding:32px;display:flex;align-items:center;justify-content:space-between;gap:20px}
@@ -594,7 +613,7 @@ async function cargarCategorias(){
 async function cargarActividades(){
  const contenedor=document.getElementById("listaActividades");
  const {data,error}=await db.from("actividades")
-  .select("id,titulo,descripcion,categoria,fecha,horario,lugar")
+  .select("id,titulo,descripcion,categoria,fecha,horario,lugar,fotos")
   .eq("publicado",true)
   .is("categoria_id",null)
   .order("fecha",{ascending:true,nullsFirst:false});
@@ -628,6 +647,31 @@ async function cargarActividades(){
   if(item.fecha)agregarTexto(tarjeta,"p","📅 "+fechaBonita(item.fecha));
   if(item.horario)agregarTexto(tarjeta,"p","🕒 "+item.horario);
   if(item.lugar)agregarTexto(tarjeta,"p","📍 "+item.lugar);
+   if(item.lugar)agregarTexto(tarjeta,"p","📍 "+item.lugar);
+
+// Galería de fotos de la actividad
+if(Array.isArray(item.fotos)&&item.fotos.length>0){
+ const galeria=document.createElement("div");
+ galeria.className="galeria-actividad";
+
+ item.fotos.forEach(url=>{
+  const foto=document.createElement("img");
+  foto.src=url;
+  foto.alt="Foto de "+item.titulo;
+  foto.loading="lazy";
+  foto.className="foto-actividad";
+
+  foto.addEventListener("click",()=>{
+   window.open(url,"_blank");
+  });
+
+  galeria.appendChild(foto);
+ });
+
+ tarjeta.appendChild(galeria);
+}
+
+contenedor.appendChild(tarjeta);
 
   contenedor.appendChild(tarjeta);
  });
