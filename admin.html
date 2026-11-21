@@ -120,6 +120,12 @@ button.danger{background:#b52b2b}
   <label>📸 Fotos de la actividad</label>
 <input id="actFotos" type="file" accept="image/*" multiple>
 <small style="display:block;color:#666;margin-top:5px;">
+  <div id="actFotosPreview" style="
+ display:grid;
+ grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
+ gap:10px;
+ margin:12px 0;
+"></div>
   Podés seleccionar varias fotos para acompañar la publicación.
 </small>
 <label>Horario</label>
@@ -831,7 +837,34 @@ async function cargarActividades(){
       </div>
     `).join("") || "<p>Aún no hay actividades.</p>";
 }
+document.getElementById("actFotos").addEventListener("change", function(){
 
+ const preview = document.getElementById("actFotosPreview");
+ preview.innerHTML = "";
+
+ const archivos = Array.from(this.files);
+
+ archivos.forEach(archivo => {
+  const lector = document.createElement("img");
+  lector.src = URL.createObjectURL(archivo);
+  lector.style.width = "100%";
+  lector.style.height = "100px";
+  lector.style.objectFit = "cover";
+  lector.style.borderRadius = "10px";
+
+  preview.appendChild(lector);
+ });
+
+ if(archivos.length > 0){
+  const contador = document.createElement("p");
+  contador.style.gridColumn = "1 / -1";
+  contador.style.fontSize = "13px";
+  contador.style.color = "#267044";
+  contador.textContent = archivos.length + " fotos seleccionadas";
+  preview.appendChild(contador);
+ }
+
+});
 
 document.getElementById("formActividad").addEventListener("submit", async e => {
   e.preventDefault();
