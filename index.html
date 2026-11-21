@@ -309,6 +309,96 @@ height:480px;
 </style>
 </head>
 <body>
+  <!-- PANTALLA DE MANTENIMIENTO -->
+<style>
+#mantenimiento{
+ position:fixed;
+ inset:0;
+ z-index:999999;
+ background:
+ radial-gradient(ellipse at 50% 0%,#397653 0%,transparent 55%),
+ linear-gradient(145deg,#102f21,#071b12);
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ padding:25px;
+ text-align:center;
+ color:white;
+ font-family:Arial,sans-serif;
+}
+
+.mantenimiento-contenido{
+ max-width:650px;
+ width:100%;
+}
+
+.mantenimiento-cancha{
+ font-size:75px;
+ margin-bottom:25px;
+}
+
+.mantenimiento-club{
+ font-size:19px;
+ font-weight:bold;
+ letter-spacing:3px;
+ margin-bottom:35px;
+}
+
+.mantenimiento-titulo{
+ font-size:clamp(30px,6vw,48px);
+ font-weight:800;
+ margin-bottom:18px;
+}
+
+.mantenimiento-texto{
+ color:#d7e6dc;
+ font-size:17px;
+ line-height:1.7;
+}
+
+.mantenimiento-final{
+ display:inline-block;
+ margin-top:30px;
+ padding:13px 25px;
+ border:1px solid #8db69a;
+ border-radius:30px;
+ font-weight:bold;
+}
+
+@media(max-width:500px){
+ .mantenimiento-club{font-size:15px}
+ .mantenimiento-cancha{font-size:60px}
+}
+</style>
+
+<div id="mantenimiento">
+ <div class="mantenimiento-contenido">
+
+  <div class="mantenimiento-cancha">⚽</div>
+
+  <div class="mantenimiento-club">
+   CLUB SOCIAL CASILDA
+  </div>
+
+  <div class="mantenimiento-titulo">
+   ¡Estamos renovando nuestra página!
+  </div>
+
+  <p class="mantenimiento-texto">
+   Estamos realizando algunas mejoras para ofrecerte
+   una mejor experiencia.
+  </p>
+
+  <div class="mantenimiento-final">
+   ¡Muy pronto volvemos! 💚
+  </div>
+
+  <p class="mantenimiento-texto" style="font-size:14px;margin-top:35px">
+   Gracias por tu paciencia.
+  </p>
+
+ </div>
+</div>
 <div class="topline"></div>
 
 
