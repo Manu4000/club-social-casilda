@@ -7,24 +7,7 @@
 <title>Administración | Club Social</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<section>
-  <h2>🩺 Fichas médicas de jugadores</h2>
-  <p>Consultá de manera privada los datos personales, contactos e información médica de cada jugador.</p>
 
-  <input
-    type="search"
-    id="buscarFicha"
-    placeholder="Buscar jugador por nombre o apellido..."
-    oninput="filtrarFichas()"
-  >
-
-  <div id="listaFichas">
-    <p>Las fichas aparecerán acá.</p>
-  </div>
-
-  <div id="detalleFicha" style="display:none;margin-top:20px;padding:18px;background:#f1f5f2;border-radius:10px;">
-  </div>
-</section>
 
 <style>
 *{box-sizing:border-box}
@@ -68,12 +51,25 @@ button.danger{background:#b52b2b}
 </section>
 
 <div id="panel">
-  <div id="panel">
-
-<!-- ACÁ VA EL BLOQUE DE FICHAS MÉDICAS -->
-
 <section>
-<h2>📊 Estadísticas de la página</h2>
+  <h2>🩺 Fichas médicas de jugadores</h2>
+  <p>Consultá de manera privada los datos personales, contactos e información médica de cada jugador.</p>
+
+  <input
+    type="search"
+    id="buscarFicha"
+    placeholder="Buscar jugador por nombre o apellido..."
+    oninput="filtrarFichas()"
+  >
+
+  <div id="listaFichas">
+    <p>Las fichas aparecerán acá.</p>
+  </div>
+
+  <div id="detalleFicha" style="display:none;margin-top:20px;padding:18px;background:#f1f5f2;border-radius:10px;"></div>
+</section>
+
+
 <section>
   <h2>📊 Estadísticas de la página</h2>
   <p>Consultá cuántas personas visitan la página del Club Social Casilda y cómo evoluciona su actividad.</p>
